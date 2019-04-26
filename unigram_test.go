@@ -126,28 +126,27 @@ func TestFilterUnigram(t *testing.T) {
 }
 
 func TestUnigramEncode(t *testing.T) {
-	words := LoadSampleWords()
-	u := ExtractUnigram(words)
-	codes, docIdxs := UnigramEncode(u, words)
-	newDocCodeCount := 0
-	for i, code := range codes {
-		if code == NEWDOC {
-			newDocCodeCount++
-			continue
-		}
-		word := words[i]
-		wordHat := u.decode(code)
-		if wordHat != word {
-			t.Errorf("Decoding error: should be %s but got %s\n", word, wordHat)
-		}
-		codeHat := u.encode(word)
-		if code != codeHat {
-			t.Errorf("Encoding error: should be %d but got %d\n", code, codeHat)
+	documents := LoadSampleWords()
+	u := ExtractUnigram(documents)
+	encodedDocs := UnigramEncode(u, documents)
+	newDocCodeCount := len(encodedDocs)
+
+	for d, doc := range encodedDocs {
+		for i, code := range doc {
+			word := documents[d][i]
+			wordHat := u.decode(code)
+			if wordHat != word {
+				t.Errorf("Decoding error: should be %s but got %s\n", word, wordHat)
+			}
+			codeHat := u.encode(word)
+			if code != codeHat {
+				t.Errorf("Encoding error: should be %d but got %d\n", code, codeHat)
+			}
 		}
 	}
-	if len(docIdxs) != 937 && newDocCodeCount != 937 {
-		t.Errorf("Different number of line breaks (%d) vs docidxs (%d) vs line break codes (%d)!\n",
-			937, len(docIdxs), newDocCodeCount)
+	if newDocCodeCount != 937 {
+		t.Errorf("Different number of line breaks (%d) vs documents (%d)!\n",
+			937, newDocCodeCount)
 	}
 
 }

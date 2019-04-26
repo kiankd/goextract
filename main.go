@@ -5,7 +5,7 @@ import (
 )
 
 // LoadSampleWords - get sample words
-func LoadSampleWords() []string {
+func LoadSampleWords() [][]string {
 	l := ConstructLogger("silent")
 	return ReadParseGz("sample.txt.gz", &l)
 }

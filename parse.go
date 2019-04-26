@@ -7,7 +7,7 @@ import (
 type docMerger struct {
 	nDocs    int
 	realDocs int
-	state    []string
+	state    [][]string
 	input    chan []string
 	done     chan bool
 }
@@ -16,8 +16,7 @@ func (m *docMerger) listen() {
 	for i := 0; i < m.nDocs; i++ {
 		words := <-m.input
 		if len(words) > 0 {
-			m.state = append(m.state, words...)
-			m.state = append(m.state, NEWLINE)
+			m.state = append(m.state, words)
 			m.realDocs++
 		}
 	}
@@ -25,12 +24,10 @@ func (m *docMerger) listen() {
 }
 
 // Parse - parses into words
-func Parse(documents []string) []string {
-	var allWords []string
-
+func Parse(documents []string) [][]string {
 	merger := docMerger{
 		nDocs: len(documents),
-		state: allWords,
+		state: make([][]string, 0, len(documents)),
 		input: make(chan []string, 100),
 		done:  make(chan bool)}
 	go merger.listen()

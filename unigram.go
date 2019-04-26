@@ -165,15 +165,17 @@ func LoadUnigram(fullPath string) Unigram {
 /***** Primary utility functions *****/
 
 // ExtractUnigram - make a more efficient datastructure before coocc counting.
-func ExtractUnigram(words []string) Unigram {
+func ExtractUnigram(documents [][]string) Unigram {
 	u := ConstructUnigram()
-	for _, word := range words {
-		if _, ok := u.encoder[word]; !ok {
-			u.encoder[word] = len(u.encoder)
+	for _, doc := range documents {
+		for _, word := range doc {
+			if _, ok := u.encoder[word]; !ok {
+				u.encoder[word] = len(u.encoder)
+			}
+			code := u.encoder[word]
+			u.decoder[code] = word
+			u.counter[code]++
 		}
-		code := u.encoder[word]
-		u.decoder[code] = word
-		u.counter[code]++
 	}
 	u.idx = make([]int, len(u.counter))
 	for i := range u.idx {
@@ -204,29 +206,27 @@ func FilterUnigram(u Unigram, maxVocabSize int) (filteredU Unigram) {
 }
 
 // UnigramEncode - encodes a string list into the unigram codes.
-func UnigramEncode(u Unigram, words []string) ([]int, []int) {
-	docIdxs := make([]int, 0, len(words))
-	codes := make([]int, len(words))
-	for i, word := range words {
-		if word == NEWLINE {
-			codes[i] = NEWDOC
-			docIdxs = append(docIdxs, i)
-			continue
+// TODO: make this function concurrent.
+func UnigramEncode(u Unigram, documents [][]string) [][]int {
+	codes := make([][]int, len(documents))
+	for d, doc := range documents {
+		codes[d] = make([]int, len(doc))
+		for i, word := range doc {
+			codes[d][i] = u.encode(word)
 		}
-		codes[i] = u.encode(word)
 	}
-	return codes, docIdxs
+	return codes
 }
 
 // FullUnigramExtraction - the main method that does the work.
-func FullUnigramExtraction(words *[]string, vocabSize int, logger *Logger) (Unigram, []int, []int) {
+func FullUnigramExtraction(documents [][]string, vocabSize int, logger *Logger) (Unigram, [][]int) {
 	logger.log("Extracting unigram...")
-	u := ExtractUnigram(*words)
+	u := ExtractUnigram(documents)
 
 	logger.log("Filtering unigram...")
 	fu := FilterUnigram(u, vocabSize)
 
 	logger.log("Encoding words to int codes...")
-	encoded, docIdxs := UnigramEncode(fu, *words)
-	return fu, encoded, docIdxs
+	encoded := UnigramEncode(fu, documents)
+	return fu, encoded
 }

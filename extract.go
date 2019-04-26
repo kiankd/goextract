@@ -29,8 +29,8 @@ func readGzFile(filename string) ([]byte, error) {
 	return s, nil
 }
 
-// ReadParseGz - reads a gzip and then parses it into words.
-func ReadParseGz(filename string, logger *Logger) []string {
+// ReadParseGz - reads a gzip and then parses it into documents.
+func ReadParseGz(filename string, logger *Logger) [][]string {
 	logger.log("Reading GZ file...")
 	byteArr, _ := readGzFile(filename)
 
@@ -66,23 +66,19 @@ func FullExtraction(
 	window int,
 	logger *Logger) (Unigram, Cooc) {
 
-	allWords := ReadParseGz(filename, logger)
-	u, allEncoded, docIdxs := FullUnigramExtraction(&allWords, maxVocabSize, logger)
+	documents := ReadParseGz(filename, logger)
+	u, encodedDocs := FullUnigramExtraction(documents, maxVocabSize, logger)
 
-	logger.log(fmt.Sprintf("Extracting cooccurences from %d docs...", len(docIdxs)))
+	logger.log(fmt.Sprintf("Extracting cooccurences from %d docs...", len(encodedDocs)))
 	merger := CoocMerger{
 		state: ConstructCooc(),
-		nDocs: len(docIdxs),
+		nDocs: len(encodedDocs),
 		input: make(chan Cooc, 100),
 		done:  make(chan bool)}
 	go merger.listen()
 
-	// TODO: make an iterable that yields starts and ends from docIdxs to save some lines here.
-	sID := -1
-	for _, eID := range docIdxs {
-		document := allEncoded[sID+1 : eID]
-		go SendCooc(document, window, merger.input)
-		sID = eID
+	for _, doc := range encodedDocs {
+		go SendCooc(doc, window, merger.input)
 	}
 	<-merger.done
 	logger.log("Finished.")

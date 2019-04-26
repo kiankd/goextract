@@ -4,18 +4,12 @@ import "testing"
 
 /* Check the newline parsing */
 func TestNewLineParsing(t *testing.T) {
-	words := LoadSampleWords()
-	if len(words) == 0 {
+	documents := LoadSampleWords()
+	if len(documents) == 0 {
 		t.Error("Words not extracted!")
 	}
-	count := 0
-	for _, w := range words {
-		if w == NEWLINE {
-			count++
-		}
-	}
-	if count != 937 {
-		t.Errorf("Incorrect newline count, we got %d lines!\n", count)
+	if len(documents) != 937 {
+		t.Errorf("Incorrect newline count, we got %d lines!\n", len(documents))
 	}
 }
 
