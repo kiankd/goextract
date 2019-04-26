@@ -14,11 +14,8 @@ import (
 // OOV - default string for out-of-vocabulary.
 const OOV = "<OOV>"
 
-// NEWDOC - default int code to indicate new document.
-const NEWDOC = -1
-
-// NEWLINE - string code for newline
-const NEWLINE = "<BR>"
+// BUFFERSIZE - for the merging channels
+const BUFFERSIZE = 100
 
 // Unigram - a dictionary struct that is sortable by counts.
 type Unigram struct {
@@ -206,16 +203,34 @@ func FilterUnigram(u Unigram, maxVocabSize int) (filteredU Unigram) {
 }
 
 // UnigramEncode - encodes a string list into the unigram codes.
-// TODO: make this function concurrent.
 func UnigramEncode(u Unigram, documents [][]string) [][]int {
-	codes := make([][]int, len(documents))
-	for d, doc := range documents {
-		codes[d] = make([]int, len(doc))
-		for i, word := range doc {
-			codes[d][i] = u.encode(word)
+	encodedDocs := make([][]int, len(documents))
+	ch := make(chan []int, BUFFERSIZE)
+	done := make(chan bool)
+
+	// listener
+	go func() {
+		for i := 0; i < len(documents); i++ {
+			codes := <-ch
+			idx := codes[len(codes)-1]
+			encodedDocs[idx] = codes[:len(codes)-1]
 		}
+		done <- true
+	}()
+
+	// sender, puts the idx in there to always retain order!
+	for d, document := range documents {
+		go func(idx int, doc []string) {
+			codes := make([]int, len(doc)+1)
+			for i, word := range doc {
+				codes[i] = u.encode(word)
+			}
+			codes[len(doc)] = idx
+			ch <- codes
+		}(d, document)
 	}
-	return codes
+	<-done
+	return encodedDocs
 }
 
 // FullUnigramExtraction - the main method that does the work.

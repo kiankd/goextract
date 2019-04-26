@@ -131,6 +131,7 @@ func TestUnigramEncode(t *testing.T) {
 	encodedDocs := UnigramEncode(u, documents)
 	newDocCodeCount := len(encodedDocs)
 
+	// TODO: test fails because order is no longer preserved as it uses a channel now.
 	for d, doc := range encodedDocs {
 		for i, code := range doc {
 			word := documents[d][i]

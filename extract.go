@@ -73,7 +73,7 @@ func FullExtraction(
 	merger := CoocMerger{
 		state: ConstructCooc(),
 		nDocs: len(encodedDocs),
-		input: make(chan Cooc, 100),
+		input: make(chan Cooc, BUFFERSIZE),
 		done:  make(chan bool)}
 	go merger.listen()
 
