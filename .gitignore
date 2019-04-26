@@ -1,0 +1,5 @@
+.vscode/
+extract
+*.gz
+*.unigram
+*.cooc
