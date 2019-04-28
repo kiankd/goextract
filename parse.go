@@ -23,7 +23,7 @@ func (m *docMerger) listen() {
 	m.done <- true
 }
 
-// Parse - parses into words
+// Parse - parses documents into words
 func Parse(documents []string) [][]string {
 	merger := docMerger{
 		nDocs: len(documents),

@@ -45,9 +45,9 @@ func ReadParseGz(filename string, logger *Logger) [][]string {
 
 // CoocMerger - manages merging for Coocs with concurrency in mind.
 type CoocMerger struct {
-	state Cooc
+	state *Cooc
 	nDocs int
-	input chan Cooc
+	input chan *Cooc
 	done  chan bool
 }
 
@@ -64,7 +64,7 @@ func FullExtraction(
 	filename string,
 	maxVocabSize int,
 	window int,
-	logger *Logger) (Unigram, Cooc) {
+	logger *Logger) (*Unigram, *Cooc) {
 
 	documents := ReadParseGz(filename, logger)
 	u, encodedDocs := FullUnigramExtraction(documents, maxVocabSize, logger)
@@ -73,12 +73,14 @@ func FullExtraction(
 	merger := CoocMerger{
 		state: ConstructCooc(),
 		nDocs: len(encodedDocs),
-		input: make(chan Cooc, BUFFERSIZE),
+		input: make(chan *Cooc, BUFFERSIZE),
 		done:  make(chan bool)}
 	go merger.listen()
 
 	for _, doc := range encodedDocs {
-		go SendCooc(doc, window, merger.input)
+		go func(document []int) {
+			merger.input <- ExtractCooc(document, window)
+		}(doc)
 	}
 	<-merger.done
 	logger.log("Finished.")

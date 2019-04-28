@@ -108,8 +108,8 @@ func validateFiltering(u Unigram, fu Unigram, t *testing.T) {
 func TestExtractUnigram(t *testing.T) {
 	words := LoadSampleWords()
 	u := ExtractUnigram(words)
-	validateAll(u, t)
-	validateSorting(u, t)
+	validateAll(*u, t)
+	validateSorting(*u, t)
 }
 
 func TestFilterUnigram(t *testing.T) {
@@ -119,9 +119,9 @@ func TestFilterUnigram(t *testing.T) {
 	vocabSizes := []int{10, 500, 1000, 50000}
 	for _, vocabSize := range vocabSizes {
 		fu := FilterUnigram(u, vocabSize)
-		validateAll(fu, t)
-		validateSorting(fu, t)
-		validateFiltering(u, fu, t)
+		validateAll(*fu, t)
+		validateSorting(*fu, t)
+		validateFiltering(*u, *fu, t)
 	}
 }
 

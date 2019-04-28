@@ -7,24 +7,24 @@ type Cooc struct {
 	counter map[int64]float64
 }
 
-func (c1 *Cooc) deepCopy() Cooc {
+func (c1 *Cooc) deepCopy() *Cooc {
 	c2 := ConstructCooc()
 	for hashCode, count := range c1.counter {
 		c2.counter[hashCode] = count
 	}
 	return c2
 }
-func (c1 *Cooc) merge(c2 Cooc) {
+func (c1 *Cooc) merge(c2 *Cooc) {
 	for hashCode, count := range c2.counter {
 		c1.counter[hashCode] += count
 	}
 }
 
 // ConstructCooc constructor
-func ConstructCooc() Cooc {
+func ConstructCooc() *Cooc {
 	cooc := Cooc{
 		counter: make(map[int64]float64)}
-	return cooc
+	return &cooc
 }
 
 /* See https://en.wikipedia.org/wiki/Pairing_function#Cantor_pairing_function */
@@ -63,7 +63,7 @@ func Weighting(termIdx int, contIdx int, window float64) float64 {
 }
 
 // ExtractCooc - extracts cooccurrence statistics from an encoded document.
-func ExtractCooc(encodedDoc []int, window int) Cooc {
+func ExtractCooc(encodedDoc []int, window int) *Cooc {
 	cooc := ConstructCooc()
 	for i, term := range encodedDoc {
 		start, end := getContexts(i, window, len(encodedDoc))
@@ -73,9 +73,4 @@ func ExtractCooc(encodedDoc []int, window int) Cooc {
 		}
 	}
 	return cooc
-}
-
-// SendCooc - send an extracted coocurrence to the input channel
-func SendCooc(encodedDoc []int, window int, input chan Cooc) {
-	input <- ExtractCooc(encodedDoc, window)
 }

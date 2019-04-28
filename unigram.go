@@ -53,7 +53,7 @@ func (u Unigram) Less(i, j int) bool {
 /*****  Helpful constructors *****/
 
 // ConstructUnigram - constructs a unigram object without any allocated memory.
-func ConstructUnigram() Unigram {
+func ConstructUnigram() *Unigram {
 	u := Unigram{
 		encoder: make(map[string]int),
 		decoder: make(map[int]string),
@@ -61,11 +61,11 @@ func ConstructUnigram() Unigram {
 	u.encoder[OOV] = 0
 	u.decoder[0] = OOV
 	u.counter[0] = 0.0
-	return u
+	return &u
 }
 
 // ConstructAllocatedUnigram - build a memory-allocated unigram exactly for size.
-func ConstructAllocatedUnigram(size int) Unigram {
+func ConstructAllocatedUnigram(size int) *Unigram {
 	u := Unigram{
 		encoder: make(map[string]int, size),
 		decoder: make(map[int]string, size),
@@ -77,13 +77,13 @@ func ConstructAllocatedUnigram(size int) Unigram {
 	for i := range u.idx {
 		u.idx[i] = i
 	}
-	return u
+	return &u
 }
 
 /***** Examiners *****/
 
 // DescribeUnigram - returns a string that describes unigram according to verbosity
-func DescribeUnigram(u Unigram, verbosity int) string {
+func DescribeUnigram(u *Unigram, verbosity int) string {
 	s := ""
 	if verbosity == 0 {
 		return s
@@ -104,7 +104,7 @@ func DescribeUnigram(u Unigram, verbosity int) string {
 }
 
 // SerializeUnigram - writes the unigram to disk in a nice way
-func SerializeUnigram(u Unigram, path string) error {
+func SerializeUnigram(u *Unigram, path string) error {
 	fname := "u.unigram"
 	if !strings.HasSuffix(path, "/") {
 		fname = "/" + fname
@@ -125,7 +125,7 @@ func SerializeUnigram(u Unigram, path string) error {
 }
 
 // LoadUnigram - reads a unigram from disk
-func LoadUnigram(fullPath string) Unigram {
+func LoadUnigram(fullPath string) *Unigram {
 	if f, err := os.Open(fullPath); err == nil {
 		defer f.Close()
 
@@ -162,7 +162,7 @@ func LoadUnigram(fullPath string) Unigram {
 /***** Primary utility functions *****/
 
 // ExtractUnigram - make a more efficient datastructure before coocc counting.
-func ExtractUnigram(documents [][]string) Unigram {
+func ExtractUnigram(documents [][]string) *Unigram {
 	u := ConstructUnigram()
 	for _, doc := range documents {
 		for _, word := range doc {
@@ -182,7 +182,7 @@ func ExtractUnigram(documents [][]string) Unigram {
 }
 
 // FilterUnigram - filters a unigram object to correspond to a vocabulary size.
-func FilterUnigram(u Unigram, maxVocabSize int) (filteredU Unigram) {
+func FilterUnigram(u *Unigram, maxVocabSize int) (filteredU *Unigram) {
 	vocabSize := int(math.Min(float64(maxVocabSize), float64(u.Len())))
 	filteredU = ConstructAllocatedUnigram(vocabSize)
 	sort.Sort(u)
@@ -203,7 +203,7 @@ func FilterUnigram(u Unigram, maxVocabSize int) (filteredU Unigram) {
 }
 
 // UnigramEncode - encodes a string list into the unigram codes.
-func UnigramEncode(u Unigram, documents [][]string) [][]int {
+func UnigramEncode(u *Unigram, documents [][]string) [][]int {
 	encodedDocs := make([][]int, len(documents))
 	ch := make(chan []int, BUFFERSIZE)
 	done := make(chan bool)
@@ -234,7 +234,7 @@ func UnigramEncode(u Unigram, documents [][]string) [][]int {
 }
 
 // FullUnigramExtraction - the main method that does the work.
-func FullUnigramExtraction(documents [][]string, vocabSize int, logger *Logger) (Unigram, [][]int) {
+func FullUnigramExtraction(documents [][]string, vocabSize int, logger *Logger) (*Unigram, [][]int) {
 	logger.log("Extracting unigram...")
 	u := ExtractUnigram(documents)
 
