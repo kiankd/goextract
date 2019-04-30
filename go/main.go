@@ -9,7 +9,7 @@ import (
 // LoadSampleWords - get sample words
 func LoadSampleWords() [][]string {
 	l := ConstructLogger("silent")
-	return ReadParseGz("sample.txt.gz", &l)
+	return ReadParseGz("../data/sample.txt.gz", &l)
 }
 
 func main() {
@@ -25,7 +25,7 @@ func main() {
 	// fmt.Println(DescribeUnigram(u2, 10))
 
 	// u, c := FullExtraction("/Users/kiankd/sentpiece/spm-parsed/spm-parsed00.gz", 50000, 5, &l)
-	u, c := FullExtraction("sample.txt.gz", 1e4, 25, &l)
+	u, c := FullExtraction("../data/sample.txt.gz", 1e4, 25, &l)
 	fmt.Printf("\nLength of c: %d\n\n", len(c.counter))
 
 	if false {

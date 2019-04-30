@@ -105,7 +105,7 @@ func DescribeUnigram(u *Unigram, verbosity int) string {
 
 // SerializeUnigram - writes the unigram to disk in a nice way
 func SerializeUnigram(u *Unigram, path string) error {
-	fname := "u.unigram"
+	fname := "../data/u.unigram"
 	if !strings.HasSuffix(path, "/") {
 		fname = "/" + fname
 	}
