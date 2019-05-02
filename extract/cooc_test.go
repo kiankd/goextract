@@ -27,6 +27,27 @@ func TestExtractCooc(t *testing.T) {
 	}
 }
 
+func TestWeighting(t *testing.T) {
+	window := 5
+	values := []float64{0.2, 0.4, 0.6, 0.8, 1, 1, 0.8, 0.6, 0.4, 0.2}
+	for i := window + 1; i < 1000-(window+1); i++ {
+		start, end := getContexts(i, window, 1000)
+		if end-start != len(values) {
+			t.Errorf("Error with context extraction, got %d to %d.\n", start, end)
+		}
+		crt := 0
+		for c := start; c < end; c++ {
+			if i != c {
+				w := Weighting(i, c, float64(window))
+				if w != values[crt] {
+					t.Errorf("Weight %f != %f!\n", w, values[crt])
+				}
+				crt++
+			}
+		}
+	}
+}
+
 func TestCoocMerge(t *testing.T) {
 	words := LoadSampleWords()
 	u := ExtractUnigram(words)

@@ -25,6 +25,28 @@ type Unigram struct {
 	idx     []int
 }
 
+func (u *Unigram) addStr(str string, count float64) {
+	if code, ok := u.encoder[str]; ok {
+		u.counter[code] += count
+	} else {
+		newCode := len(u.encoder)
+		u.encoder[str] = newCode
+		u.decoder[newCode] = str
+		u.counter[newCode] = count
+	}
+}
+
+// FillIdx - constructs the indices in a Unigram, if necessary.
+func (u *Unigram) FillIdx() {
+	if len(u.idx) == len(u.counter) {
+		return
+	}
+	u.idx = make([]int, len(u.counter))
+	for i := range u.idx {
+		u.idx[i] = i
+	}
+}
+
 // Decode - decodes a single code
 func (u *Unigram) Decode(code int) string {
 	if str, ok := u.decoder[code]; ok {
@@ -44,14 +66,7 @@ func (u *Unigram) Encode(str string) int {
 // Merge - Unigram u eats another Unigram u2.
 func (u *Unigram) Merge(u2 *Unigram) {
 	for str, code2 := range u2.encoder {
-		if code1, ok := u.encoder[str]; ok {
-			u.counter[code1] += u2.counter[code2]
-		} else {
-			newCode := len(u.encoder)
-			u.encoder[str] = newCode
-			u.decoder[newCode] = str
-			u.counter[newCode] = u2.counter[code2]
-		}
+		u.addStr(str, u2.counter[code2])
 	}
 }
 
@@ -136,6 +151,21 @@ func SerializeUnigram(u *Unigram, fullPath string) error {
 	return nil
 }
 
+// Helper function for LoadUnigram.
+func parseUnigramLine(trip string) (string, int, float64) {
+	split := strings.Split(trip, " ")
+	if len(split) != 3 {
+		panic(fmt.Sprintf("Corrupted unigram encoding - %d spaces!\n", len(split)))
+	}
+	word := split[1]
+	code, err1 := strconv.Atoi(split[0])
+	count, err2 := strconv.ParseFloat(split[2], 64)
+	if err1 != nil && err2 != nil {
+		panic(fmt.Sprintf("Corrupted unigram encoding! Str is: %s", trip))
+	}
+	return word, code, count
+}
+
 // LoadUnigram - reads a unigram from disk
 func LoadUnigram(fullPath string) *Unigram {
 	if f, err := os.Open(fullPath); err == nil {
@@ -151,16 +181,7 @@ func LoadUnigram(fullPath string) *Unigram {
 				if len(trip) == 0 {
 					continue
 				}
-				split := strings.Split(trip, " ")
-				if len(split) != 3 {
-					panic(fmt.Sprintf("Corrupted unigram encoding - %d spaces!\n", len(split)))
-				}
-				word := split[1]
-				code, err1 := strconv.Atoi(split[0])
-				count, err2 := strconv.ParseFloat(split[2], 64)
-				if err1 != nil && err2 != nil {
-					panic(fmt.Sprintf("Corrupted unigram encoding! Str is: %s", trip))
-				}
+				word, code, count := parseUnigramLine(trip)
 				u.counter[code] = count
 				u.decoder[code] = word
 				u.encoder[word] = code
@@ -173,30 +194,27 @@ func LoadUnigram(fullPath string) *Unigram {
 
 /***** Primary utility functions *****/
 
-// ExtractUnigram - make a the unigram datastructure before coocc counting.
-func ExtractUnigram(documents [][]string) *Unigram {
-	u := ConstructUnigram()
+// Private boy that actually does extraction. Could make it multi-processed, but its okay.
+func extractWithUnigram(documents [][]string, u *Unigram) {
 	for _, doc := range documents {
 		for _, word := range doc {
-			if _, ok := u.encoder[word]; !ok {
-				u.encoder[word] = len(u.encoder)
-			}
-			code := u.encoder[word]
-			u.decoder[code] = word
-			u.counter[code]++
+			u.addStr(word, 1)
 		}
 	}
-	u.idx = make([]int, len(u.counter))
-	for i := range u.idx {
-		u.idx[i] = i
-	}
+}
+
+// ExtractUnigram - extract a unigram from a set of docs, used in testing.
+func ExtractUnigram(documents [][]string) *Unigram {
+	u := ConstructUnigram()
+	extractWithUnigram(documents, u)
+	u.FillIdx()
 	return u
 }
 
 // FilterUnigram - filters a unigram object to correspond to a vocabulary size.
-func FilterUnigram(u *Unigram, maxVocabSize int) (filteredU *Unigram) {
+func FilterUnigram(u *Unigram, maxVocabSize int) (fu *Unigram) {
 	vocabSize := int(math.Min(float64(maxVocabSize), float64(u.Len())))
-	filteredU = ConstructAllocatedUnigram(vocabSize)
+	fu = ConstructAllocatedUnigram(vocabSize)
 	sort.Sort(u)
 	oovCount := 0.0
 	for i, oldCode := range u.idx {
@@ -206,11 +224,11 @@ func FilterUnigram(u *Unigram, maxVocabSize int) (filteredU *Unigram) {
 			continue
 		}
 		word := u.decoder[oldCode]
-		filteredU.encoder[word] = newCode
-		filteredU.decoder[newCode] = word
-		filteredU.counter[newCode] = u.counter[oldCode]
+		fu.encoder[word] = newCode
+		fu.decoder[newCode] = word
+		fu.counter[newCode] = u.counter[oldCode]
 	}
-	filteredU.counter[filteredU.encoder[OOV]] = oovCount
+	fu.counter[fu.encoder[OOV]] = oovCount
 	return
 }
 
@@ -230,7 +248,7 @@ func UnigramEncode(u *Unigram, documents [][]string) [][]int {
 		done <- true
 	}()
 
-	// sender, puts the idx in there to always retain order!
+	// speaker, puts the idx in there to always retain order!
 	for d, document := range documents {
 		go func(idx int, doc []string) {
 			codes := make([]int, len(doc)+1)
@@ -243,41 +261,4 @@ func UnigramEncode(u *Unigram, documents [][]string) [][]int {
 	}
 	<-done
 	return encodedDocs
-}
-
-// FullUnigramExtraction - the main method that does all the work at once.
-func FullUnigramExtraction(documents [][]string, vocabSize int, logger *Logger) (*Unigram, [][]int) {
-	logger.Log("Extracting unigram...")
-	u := ExtractUnigram(documents)
-
-	logger.Log("Filtering unigram...")
-	fu := FilterUnigram(u, vocabSize)
-
-	logger.Log("Encoding words to int codes...")
-	encoded := UnigramEncode(fu, documents)
-	return fu, encoded
-}
-
-// DynamicUnigramExtraction - to be used when using large amounts of data.
-func DynamicUnigramExtraction(dataPaths []string, replaceDigits bool, logger *Logger) *Unigram {
-	u := ConstructUnigram()
-	for _, path := range dataPaths {
-		documents := ReadParseGz(path, replaceDigits, logger)
-		logger.Log("\tdetermining the encoding and counting...")
-		for _, doc := range documents {
-			for _, word := range doc {
-				if _, ok := u.encoder[word]; !ok {
-					u.encoder[word] = len(u.encoder)
-				}
-				code := u.encoder[word]
-				u.decoder[code] = word
-				u.counter[code]++
-			}
-		}
-	}
-	u.idx = make([]int, len(u.counter))
-	for i := range u.idx {
-		u.idx[i] = i
-	}
-	return u
 }

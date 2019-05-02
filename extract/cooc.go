@@ -68,8 +68,10 @@ func ExtractCooc(encodedDoc []int, window int) *Cooc {
 	for i, term := range encodedDoc {
 		start, end := getContexts(i, window, len(encodedDoc))
 		for j := start; j < end; j++ {
-			cantor := CantorPairing(int64(term), int64(encodedDoc[j]))
-			cooc.counter[cantor] += Weighting(i, j, float64(window))
+			if i != j {
+				cantor := CantorPairing(int64(term), int64(encodedDoc[j]))
+				cooc.counter[cantor] += Weighting(i, j, float64(window))
+			}
 		}
 	}
 	return cooc

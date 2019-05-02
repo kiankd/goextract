@@ -12,28 +12,30 @@ import (
 )
 
 func runExample() {
-	l := ConstructLogger("print")
-	u, c := FullExtraction("../data/sample.txt.gz", 1e4, 25, false, &l)
-	fmt.Printf("\nLength of c: %d\n\n", len(c.counter))
-	i := 0
-	for cantorCode, count := range c.counter {
-		x, y := InverseCantor(cantorCode)
-		wX := u.Decode(x)
-		wY := u.Decode(y)
-		fmt.Printf("(%16s, %15s): %f\n", wX, wY, count)
-		i++
-		if i > 2 {
-			break
-		}
-	}
-	codeOf := u.Encode("▁of")
-	codeThe := u.Encode("▁the")
-	cantor := CantorPairing(int64(codeOf), int64(codeThe))
-	fmt.Println()
-	fmt.Printf("(▁of, ▁the): %f\n", c.counter[cantor])
 }
 
-func loadExperimentPaths(extractPath string) []string {
+// 	l := ConstructLogger("print")
+// 	u, c := FullExtraction("../data/sample.txt.gz", 1e4, 25, false, l)
+// 	fmt.Printf("\nLength of c: %d\n\n", len(c.counter))
+// 	i := 0
+// 	for cantorCode, count := range c.counter {
+// 		x, y := InverseCantor(cantorCode)
+// 		wX := u.Decode(x)
+// 		wY := u.Decode(y)
+// 		fmt.Printf("(%16s, %15s): %f\n", wX, wY, count)
+// 		i++
+// 		if i > 2 {
+// 			break
+// 		}
+// 	}
+// 	codeOf := u.Encode("▁of")
+// 	codeThe := u.Encode("▁the")
+// 	cantor := CantorPairing(int64(codeOf), int64(codeThe))
+// 	fmt.Println()
+// 	fmt.Printf("(▁of, ▁the): %f\n", c.counter[cantor])
+// }
+
+func loadExperimentPath(extractPath string) string {
 	var paths []string
 	if strings.HasSuffix(extractPath, ".paths") {
 		if f, err := os.Open(extractPath); err == nil {
@@ -53,7 +55,26 @@ func loadExperimentPaths(extractPath string) []string {
 			paths[i] = p
 		}
 	}
-	return paths
+	if len(paths) > 1 {
+		panic("It is inefficient to parse multiple at once, do one at a time with a bash script.")
+	}
+	return paths[0]
+}
+
+func mergeUnigrams(unigramPath string, l *Logger) {
+	u := ConstructUnigram()
+	uFiles, _ := ioutil.ReadDir(unigramPath)
+	for _, file := range uFiles {
+		n := file.Name()
+		if strings.HasSuffix(n, ".unigram") && !strings.HasPrefix(n, "merged") {
+			l.Log(fmt.Sprintf("\tmerging %s...\n", n))
+			u2 := LoadUnigram(unigramPath + n)
+			u.Merge(u2)
+		}
+	}
+	u.FillIdx()
+	sort.Sort(u)
+	SerializeUnigram(u, unigramPath+"merged.unigram")
 }
 
 func main() {
@@ -88,7 +109,7 @@ func main() {
 	l := ConstructLogger(*logOption)
 
 	// Very beginning - ensure the file exists, and parse if there are multiple.
-	paths := loadExperimentPaths(extractPath)
+	path := loadExperimentPath(extractPath)
 
 	// Now check if we are doing debugging stuff.
 	if *debug {
@@ -103,34 +124,19 @@ func main() {
 	var unigram *Unigram
 	uPth := *unigramPath
 	if *mergeUnigramsOnly {
-		u := ConstructUnigram()
-		uFiles, _ := ioutil.ReadDir(uPth)
-		for _, file := range uFiles {
-			n := file.Name()
-			if strings.HasSuffix(n, ".unigram") && !strings.HasPrefix(n, "merged") {
-				l.Log(fmt.Sprintf("\tmerging %s...\n", n))
-				u2 := LoadUnigram(uPth + n)
-				u.Merge(u2)
-			}
-		}
-		u.idx = make([]int, len(u.encoder))
-		for i := range u.idx {
-			u.idx[i] = i
-		}
-		sort.Sort(u)
-		SerializeUnigram(u, uPth+"merged.unigram")
+		mergeUnigrams(uPth, l)
 		return
 	}
 
 	// Otherwise, we gotta load/extract unigrams
-	l.LogAll("Loading from paths:", paths)
+	l.Log(fmt.Sprintf("Will extract from path %s...", path))
 	if _, err := os.Stat(uPth); os.IsNotExist(err) {
-		l.Log("Extracting unigram...")
-		unigram = DynamicUnigramExtraction(paths, *replaceDigits, &l)
-		l.Log("Serializing unigram...")
+		l.Log("\textracting its unigram...")
+		unigram = UnigramExtraction(extractPath, *replaceDigits, l)
+		l.Log("\tserializing its unigram...")
 		SerializeUnigram(unigram, uPth)
 	} else {
-		l.Log(fmt.Sprintf("Loading unigram from %s...", uPth))
+		l.Log(fmt.Sprintf("\tloading unigram from %s...", uPth))
 		unigram = LoadUnigram(uPth)
 	}
 

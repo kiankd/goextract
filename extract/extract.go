@@ -43,6 +43,20 @@ func ReadParseGz(filename string, replaceDigits bool, logger *Logger) [][]string
 	return Parse(docs, replaceDigits)
 }
 
+/* Unigram Extraction */
+
+// UnigramExtraction - to be used when using large amounts of data.
+func UnigramExtraction(filename string, replaceDigits bool, logger *Logger) *Unigram {
+	u := ConstructUnigram()
+	documents := ReadParseGz(filename, replaceDigits, logger)
+	logger.Log("\tdetermining the encoding and counting...")
+	extractWithUnigram(documents, u)
+	u.FillIdx()
+	return u
+}
+
+/* Cooc Extraction */
+
 // CoocMerger - manages merging for Coocs with concurrency in mind.
 type CoocMerger struct {
 	state *Cooc
@@ -51,24 +65,18 @@ type CoocMerger struct {
 	done  chan bool
 }
 
-func (merger *CoocMerger) listen() {
-	for i := 0; i < merger.nDocs; i++ {
-		received := <-merger.input
-		merger.state.merge(received)
+func (m *CoocMerger) listen() {
+	for i := 0; i < m.nDocs; i++ {
+		received := <-m.input
+		m.state.merge(received)
 	}
-	merger.done <- true
+	m.done <- true
 }
 
-// FullExtraction - performs the full extraction pipeline.
-func FullExtraction(
-	filename string,
-	maxVocabSize int,
-	window int,
-	replaceDigits bool,
-	logger *Logger) (*Unigram, *Cooc) {
-
+// CoocExtraction - performs the full extraction pipeline.
+func CoocExtraction(filename string, u *Unigram, window int, replaceDigits bool, logger *Logger) *Cooc {
 	documents := ReadParseGz(filename, replaceDigits, logger)
-	u, encodedDocs := FullUnigramExtraction(documents, maxVocabSize, logger)
+	encodedDocs := UnigramEncode(u, documents)
 
 	logger.Log(fmt.Sprintf("Extracting cooccurences from %d docs...", len(encodedDocs)))
 	merger := CoocMerger{
@@ -76,14 +84,19 @@ func FullExtraction(
 		nDocs: len(encodedDocs),
 		input: make(chan *Cooc, BUFFERSIZE),
 		done:  make(chan bool)}
-	go merger.listen()
 
+	// listener
+	merger.listen()
+
+	// speaker
 	for _, doc := range encodedDocs {
 		go func(document []int) {
 			merger.input <- ExtractCooc(document, window)
 		}(doc)
 	}
 	<-merger.done
+
+	// Finished!
 	logger.Log("Finished.")
-	return u, merger.state
+	return merger.state
 }

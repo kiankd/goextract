@@ -52,7 +52,7 @@ func (l *Logger) LogAll(header string, items []string) {
 }
 
 // ConstructLogger - constructor
-func ConstructLogger(mode string) Logger {
+func ConstructLogger(mode string) *Logger {
 	writeStart := &StringLL{} // pointer to beginning of LL
-	return Logger{time.Now(), time.Now(), mode, writeStart, writeStart}
+	return &Logger{time.Now(), time.Now(), mode, writeStart, writeStart}
 }
