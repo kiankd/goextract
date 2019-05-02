@@ -135,11 +135,11 @@ func TestUnigramEncode(t *testing.T) {
 	for d, doc := range encodedDocs {
 		for i, code := range doc {
 			word := documents[d][i]
-			wordHat := u.decode(code)
+			wordHat := u.Decode(code)
 			if wordHat != word {
 				t.Errorf("Decoding error: should be %s but got %s\n", word, wordHat)
 			}
-			codeHat := u.encode(word)
+			codeHat := u.Encode(word)
 			if code != codeHat {
 				t.Errorf("Encoding error: should be %d but got %d\n", code, codeHat)
 			}

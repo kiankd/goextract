@@ -25,18 +25,34 @@ type Unigram struct {
 	idx     []int
 }
 
-func (u Unigram) decode(code int) string {
+// Decode - decodes a single code
+func (u *Unigram) Decode(code int) string {
 	if str, ok := u.decoder[code]; ok {
 		return str
 	}
 	return u.decoder[u.encoder[OOV]]
 }
 
-func (u Unigram) encode(str string) int {
+// Encode - encodes a single string
+func (u *Unigram) Encode(str string) int {
 	if code, ok := u.encoder[str]; ok {
 		return code
 	}
 	return u.encoder[OOV]
+}
+
+// Merge - Unigram u eats another Unigram u2.
+func (u *Unigram) Merge(u2 *Unigram) {
+	for str, code2 := range u2.encoder {
+		if code1, ok := u.encoder[str]; ok {
+			u.counter[code1] += u2.counter[code2]
+		} else {
+			newCode := len(u.encoder)
+			u.encoder[str] = newCode
+			u.decoder[newCode] = str
+			u.counter[newCode] = u2.counter[code2]
+		}
+	}
 }
 
 /*****  Sorting interface *****/
@@ -80,7 +96,7 @@ func ConstructAllocatedUnigram(size int) *Unigram {
 	return &u
 }
 
-/***** Examiners *****/
+/***** Helpers *****/
 
 // DescribeUnigram - returns a string that describes unigram according to verbosity
 func DescribeUnigram(u *Unigram, verbosity int) string {
@@ -108,7 +124,7 @@ func SerializeUnigram(u *Unigram, fullPath string) error {
 	if f, err := os.Create(fullPath); err == nil {
 		defer f.Close()
 		for _, code := range u.idx {
-			word := u.decode(code)
+			word := u.Decode(code)
 			count := u.counter[code]
 			s := fmt.Sprintf("%d %s %f\n", code, word, count)
 			f.WriteString(s)
@@ -219,7 +235,7 @@ func UnigramEncode(u *Unigram, documents [][]string) [][]int {
 		go func(idx int, doc []string) {
 			codes := make([]int, len(doc)+1)
 			for i, word := range doc {
-				codes[i] = u.encode(word)
+				codes[i] = u.Encode(word)
 			}
 			codes[len(doc)] = idx
 			ch <- codes

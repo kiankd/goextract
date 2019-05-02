@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/pkg/profile"
@@ -17,16 +18,16 @@ func runExample() {
 	i := 0
 	for cantorCode, count := range c.counter {
 		x, y := InverseCantor(cantorCode)
-		wX := u.decode(x)
-		wY := u.decode(y)
+		wX := u.Decode(x)
+		wY := u.Decode(y)
 		fmt.Printf("(%16s, %15s): %f\n", wX, wY, count)
 		i++
 		if i > 2 {
 			break
 		}
 	}
-	codeOf := u.encode("▁of")
-	codeThe := u.encode("▁the")
+	codeOf := u.Encode("▁of")
+	codeThe := u.Encode("▁the")
 	cantor := CantorPairing(int64(codeOf), int64(codeThe))
 	fmt.Println()
 	fmt.Printf("(▁of, ▁the): %f\n", c.counter[cantor])
@@ -67,10 +68,12 @@ func main() {
 		"option for writing, printing, or silence [write, print, silent]")
 	unigramPath := flag.String("u", "",
 		"path to the unigram to pre-load, if desired")
+	mergeUnigramsOnly := flag.Bool("umerge", false,
+		"merge all the unigrams within the path passed to -u, do nothing else")
 	doExample := flag.Bool("example", false,
 		"run a simple example run and exit")
 	replaceDigits := flag.Bool("nodigits", false,
-		"pass this to replace all digits with 0s")
+		"replace all digits with 0s during extraction")
 	vocabSize := flag.Int("vocab", -1,
 		"desired size of the vocabulary to perform extraction")
 	flag.Parse()
@@ -86,7 +89,6 @@ func main() {
 
 	// Very beginning - ensure the file exists, and parse if there are multiple.
 	paths := loadExperimentPaths(extractPath)
-	l.LogAll("Loading from paths:", paths)
 
 	// Now check if we are doing debugging stuff.
 	if *debug {
@@ -97,9 +99,31 @@ func main() {
 		}
 	}
 
-	// Now check if we can load the unigram file.
+	// Now check if we can load the unigram file or if something else is happening.
 	var unigram *Unigram
 	uPth := *unigramPath
+	if *mergeUnigramsOnly {
+		u := ConstructUnigram()
+		uFiles, _ := ioutil.ReadDir(uPth)
+		for _, file := range uFiles {
+			n := file.Name()
+			if strings.HasSuffix(n, ".unigram") && !strings.HasPrefix(n, "merged") {
+				l.Log(fmt.Sprintf("\tmerging %s...\n", n))
+				u2 := LoadUnigram(uPth + n)
+				u.Merge(u2)
+			}
+		}
+		u.idx = make([]int, len(u.encoder))
+		for i := range u.idx {
+			u.idx[i] = i
+		}
+		sort.Sort(u)
+		SerializeUnigram(u, uPth+"merged.unigram")
+		return
+	}
+
+	// Otherwise, we gotta load/extract unigrams
+	l.LogAll("Loading from paths:", paths)
 	if _, err := os.Stat(uPth); os.IsNotExist(err) {
 		l.Log("Extracting unigram...")
 		unigram = DynamicUnigramExtraction(paths, *replaceDigits, &l)
