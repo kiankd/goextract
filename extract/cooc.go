@@ -1,6 +1,11 @@
 package main
 
-import "math"
+import (
+	"fmt"
+	"log"
+	"math"
+	"os"
+)
 
 // Cooc - Cooccurrence counter.
 type Cooc struct {
@@ -9,15 +14,38 @@ type Cooc struct {
 
 func (c1 *Cooc) deepCopy() *Cooc {
 	c2 := ConstructCooc()
-	for hashCode, count := range c1.counter {
-		c2.counter[hashCode] = count
+	for cantor, count := range c1.counter {
+		c2.counter[cantor] = count
 	}
 	return c2
 }
-func (c1 *Cooc) merge(c2 *Cooc) {
-	for hashCode, count := range c2.counter {
-		c1.counter[hashCode] += count
+
+// Merge - Cooc c1 eats the input Cooc, c2
+func (c1 *Cooc) Merge(c2 *Cooc) {
+	for cantor, count := range c2.counter {
+		c1.counter[cantor] += count
 	}
+}
+
+// SerializeCooc - Helper to write a Cooc to disk.
+func SerializeCooc(c *Cooc, fullPath string) error {
+	if f, err := os.Create(fullPath); err == nil {
+		defer f.Close()
+		for cantor, count := range c.counter {
+			f.WriteString(fmt.Sprintf("%d %f\n", cantor, count))
+		}
+	} else {
+		log.Fatal("Cannot write unigram.")
+		return err
+	}
+	return nil
+
+}
+
+// LoadCooc - loads a cooc!
+func LoadCooc(fullPath string) *Cooc {
+	c := ConstructCooc()
+	return c
 }
 
 // ConstructCooc constructor

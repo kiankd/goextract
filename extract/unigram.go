@@ -15,7 +15,7 @@ import (
 const OOV = "<OOV>"
 
 // BUFFERSIZE - for the merging channels
-const BUFFERSIZE = 100
+const BUFFERSIZE = 1000
 
 // Unigram - a dictionary struct that is sortable by counts.
 type Unigram struct {

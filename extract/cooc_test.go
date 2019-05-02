@@ -62,8 +62,8 @@ func TestCoocMerge(t *testing.T) {
 	c1copy := eater1.deepCopy()
 	eater2 := c2.deepCopy()
 
-	eater1.merge(c2)
-	eater2.merge(c1copy)
+	eater1.Merge(c2)
+	eater2.Merge(c1copy)
 
 	if len(eater1.counter) != len(eater2.counter) {
 		t.Error("Different lengths! Not a bijection!")

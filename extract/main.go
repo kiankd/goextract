@@ -61,6 +61,7 @@ func loadExperimentPath(extractPath string) string {
 	return paths[0]
 }
 
+// Merge these boys!
 func mergeUnigrams(unigramPath string, l *Logger) {
 	u := ConstructUnigram()
 	uFiles, _ := ioutil.ReadDir(unigramPath)
@@ -77,26 +78,56 @@ func mergeUnigrams(unigramPath string, l *Logger) {
 	SerializeUnigram(u, unigramPath+"merged.unigram")
 }
 
+// Merge those boys!
+func mergeCoocs(coocPath string, l *Logger) {
+	c := ConstructCooc()
+	cFiles, _ := ioutil.ReadDir(coocPath)
+	for _, file := range cFiles {
+		n := file.Name()
+		if strings.HasSuffix(n, ".cooc") && !strings.HasPrefix(n, "merged") {
+			l.Log(fmt.Sprintf("\tmerging %s...\n", n))
+			c2 := LoadCooc(coocPath + n)
+			c.Merge(c2)
+		}
+	}
+	SerializeCooc(c, coocPath+"merged.cooc")
+}
+
 func main() {
 	var extractPath string
 	flag.StringVar(&extractPath, "extract", "../data/sample.txt.gz",
 		"path to the target gz file we will be extracting")
+
+	extractOption := flag.String("option", "unigram",
+		"option for extraction, \"unigram\" or \"cooc\"; add \"-merge\" to merge?")
+
 	debug := flag.Bool("debug", false,
 		"whether to run a debug profiler")
+
 	cpuProfile := flag.Bool("pcpu", false,
 		"whether to do CPU profiling (RAM profiling is the default)")
+
 	logOption := flag.String("log", "print",
 		"option for writing, printing, or silence [write, print, silent]")
+
 	unigramPath := flag.String("u", "",
 		"path to the unigram to pre-load, if desired")
-	mergeUnigramsOnly := flag.Bool("umerge", false,
-		"merge all the unigrams within the path passed to -u, do nothing else")
+
+	coocPath := flag.String("c", "",
+		"path for where to save Coocs, if desired")
+
 	doExample := flag.Bool("example", false,
 		"run a simple example run and exit")
+
 	replaceDigits := flag.Bool("nodigits", false,
 		"replace all digits with 0s during extraction")
+
 	vocabSize := flag.Int("vocab", -1,
 		"desired size of the vocabulary to perform extraction")
+
+	window := flag.Int("window", 5,
+		"window size, an integer indicating it (only dynamic weighting for now)")
+
 	flag.Parse()
 
 	// Check if we just want to do an example run.
@@ -109,7 +140,7 @@ func main() {
 	l := ConstructLogger(*logOption)
 
 	// Very beginning - ensure the file exists, and parse if there are multiple.
-	path := loadExperimentPath(extractPath)
+	exPath := loadExperimentPath(extractPath)
 
 	// Now check if we are doing debugging stuff.
 	if *debug {
@@ -123,26 +154,35 @@ func main() {
 	// Now check if we can load the unigram file or if something else is happening.
 	var unigram *Unigram
 	uPth := *unigramPath
-	if *mergeUnigramsOnly {
+
+	if *extractOption == "unigram-merge" {
 		mergeUnigrams(uPth, l)
-		return
-	}
 
-	// Otherwise, we gotta load/extract unigrams
-	l.Log(fmt.Sprintf("Will extract from path %s...", path))
-	if _, err := os.Stat(uPth); os.IsNotExist(err) {
-		l.Log("\textracting its unigram...")
-		unigram = UnigramExtraction(extractPath, *replaceDigits, l)
-		l.Log("\tserializing its unigram...")
-		SerializeUnigram(unigram, uPth)
-	} else {
-		l.Log(fmt.Sprintf("\tloading unigram from %s...", uPth))
+	} else if *extractOption == "unigram" {
+		l.Log(fmt.Sprintf("Will extract from path %s...", exPath))
+		if _, err := os.Stat(uPth); os.IsNotExist(err) {
+			l.Log("\textracting its unigram...")
+			unigram = UnigramExtraction(extractPath, *replaceDigits, l)
+			l.Log("\tserializing its unigram...")
+			SerializeUnigram(unigram, uPth)
+		}
+
+	} else if *extractOption == "cooc" {
+		l.Log(fmt.Sprintf("Loading unigram from %s...", uPth))
 		unigram = LoadUnigram(uPth)
+		if *vocabSize > 0 {
+			l.Log(fmt.Sprintf("Filtering unigram to %d most frequent tokens...", *vocabSize))
+			unigram = FilterUnigram(unigram, *vocabSize)
+		}
+		c := CoocExtraction(exPath, unigram, *window, *replaceDigits, l)
+		cPth := *coocPath
+		if cPth == "" {
+			cPth = fmt.Sprintf("coocs/%s.cooc", exPath)
+		}
+		SerializeCooc(c, cPth)
+
+	} else if *extractOption == "cooc-merge" {
+		mergeCoocs(*coocPath, l)
 	}
 
-	// Filtering the unigram.
-	if *vocabSize > 0 {
-		l.Log(fmt.Sprintf("Filtering unigram to %d most frequent tokens...", *vocabSize))
-		unigram = FilterUnigram(unigram, *vocabSize)
-	}
 }

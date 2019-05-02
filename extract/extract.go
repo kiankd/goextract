@@ -68,7 +68,7 @@ type CoocMerger struct {
 func (m *CoocMerger) listen() {
 	for i := 0; i < m.nDocs; i++ {
 		received := <-m.input
-		m.state.merge(received)
+		m.state.Merge(received)
 	}
 	m.done <- true
 }
@@ -76,6 +76,8 @@ func (m *CoocMerger) listen() {
 // CoocExtraction - performs the full extraction pipeline.
 func CoocExtraction(filename string, u *Unigram, window int, replaceDigits bool, logger *Logger) *Cooc {
 	documents := ReadParseGz(filename, replaceDigits, logger)
+
+	logger.Log("Encoding documents...")
 	encodedDocs := UnigramEncode(u, documents)
 
 	logger.Log(fmt.Sprintf("Extracting cooccurences from %d docs...", len(encodedDocs)))
@@ -86,8 +88,10 @@ func CoocExtraction(filename string, u *Unigram, window int, replaceDigits bool,
 		done:  make(chan bool)}
 
 	// listener
-	merger.listen()
+	go merger.listen()
 
+	// TODO: use some kind of buffer to only launch K jobs at once in parallel to avoid
+	// memory overload.
 	// speaker
 	for _, doc := range encodedDocs {
 		go func(document []int) {
