@@ -2,6 +2,12 @@ package main
 
 import "testing"
 
+// LoadSampleWords - get sample words
+func LoadSampleWords() [][]string {
+	l := ConstructLogger("silent")
+	return ReadParseGz("../data/sample.txt.gz", false, &l)
+}
+
 /* Check the newline parsing */
 func TestNewLineParsing(t *testing.T) {
 	documents := LoadSampleWords()

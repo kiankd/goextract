@@ -30,17 +30,17 @@ func readGzFile(filename string) ([]byte, error) {
 }
 
 // ReadParseGz - reads a gzip and then parses it into documents.
-func ReadParseGz(filename string, logger *Logger) [][]string {
-	logger.log("Reading GZ file...")
+func ReadParseGz(filename string, replaceDigits bool, logger *Logger) [][]string {
+	logger.Log(fmt.Sprintf("Reading GZ file %s...", filename))
 	byteArr, _ := readGzFile(filename)
 
-	logger.log("Converting to strings...")
+	logger.Log("\tconverting to strings...")
 	fullStr := string(byteArr)
 	docs := strings.Split(fullStr, "\n")
 
 	// Using a channel in Parse to make this very fast.
-	logger.log(fmt.Sprintf("Parsing %d initial documents...", len(docs)))
-	return Parse(docs)
+	logger.Log(fmt.Sprintf("\tparsing %d initial documents...", len(docs)))
+	return Parse(docs, replaceDigits)
 }
 
 // CoocMerger - manages merging for Coocs with concurrency in mind.
@@ -64,12 +64,13 @@ func FullExtraction(
 	filename string,
 	maxVocabSize int,
 	window int,
+	replaceDigits bool,
 	logger *Logger) (*Unigram, *Cooc) {
 
-	documents := ReadParseGz(filename, logger)
+	documents := ReadParseGz(filename, replaceDigits, logger)
 	u, encodedDocs := FullUnigramExtraction(documents, maxVocabSize, logger)
 
-	logger.log(fmt.Sprintf("Extracting cooccurences from %d docs...", len(encodedDocs)))
+	logger.Log(fmt.Sprintf("Extracting cooccurences from %d docs...", len(encodedDocs)))
 	merger := CoocMerger{
 		state: ConstructCooc(),
 		nDocs: len(encodedDocs),
@@ -83,6 +84,6 @@ func FullExtraction(
 		}(doc)
 	}
 	<-merger.done
-	logger.log("Finished.")
+	logger.Log("Finished.")
 	return u, merger.state
 }

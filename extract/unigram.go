@@ -104,12 +104,8 @@ func DescribeUnigram(u *Unigram, verbosity int) string {
 }
 
 // SerializeUnigram - writes the unigram to disk in a nice way
-func SerializeUnigram(u *Unigram, path string) error {
-	fname := "../data/u.unigram"
-	if !strings.HasSuffix(path, "/") {
-		fname = "/" + fname
-	}
-	if f, err := os.Create(path + fname); err == nil {
+func SerializeUnigram(u *Unigram, fullPath string) error {
+	if f, err := os.Create(fullPath); err == nil {
 		defer f.Close()
 		for _, code := range u.idx {
 			word := u.decode(code)
@@ -161,7 +157,7 @@ func LoadUnigram(fullPath string) *Unigram {
 
 /***** Primary utility functions *****/
 
-// ExtractUnigram - make a more efficient datastructure before coocc counting.
+// ExtractUnigram - make a the unigram datastructure before coocc counting.
 func ExtractUnigram(documents [][]string) *Unigram {
 	u := ConstructUnigram()
 	for _, doc := range documents {
@@ -233,15 +229,39 @@ func UnigramEncode(u *Unigram, documents [][]string) [][]int {
 	return encodedDocs
 }
 
-// FullUnigramExtraction - the main method that does the work.
+// FullUnigramExtraction - the main method that does all the work at once.
 func FullUnigramExtraction(documents [][]string, vocabSize int, logger *Logger) (*Unigram, [][]int) {
-	logger.log("Extracting unigram...")
+	logger.Log("Extracting unigram...")
 	u := ExtractUnigram(documents)
 
-	logger.log("Filtering unigram...")
+	logger.Log("Filtering unigram...")
 	fu := FilterUnigram(u, vocabSize)
 
-	logger.log("Encoding words to int codes...")
+	logger.Log("Encoding words to int codes...")
 	encoded := UnigramEncode(fu, documents)
 	return fu, encoded
+}
+
+// DynamicUnigramExtraction - to be used when using large amounts of data.
+func DynamicUnigramExtraction(dataPaths []string, replaceDigits bool, logger *Logger) *Unigram {
+	u := ConstructUnigram()
+	for _, path := range dataPaths {
+		documents := ReadParseGz(path, replaceDigits, logger)
+		logger.Log("\tdetermining the encoding and counting...")
+		for _, doc := range documents {
+			for _, word := range doc {
+				if _, ok := u.encoder[word]; !ok {
+					u.encoder[word] = len(u.encoder)
+				}
+				code := u.encoder[word]
+				u.decoder[code] = word
+				u.counter[code]++
+			}
+		}
+	}
+	u.idx = make([]int, len(u.counter))
+	for i := range u.idx {
+		u.idx[i] = i
+	}
+	return u
 }
