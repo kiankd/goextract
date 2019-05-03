@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"time"
 )
 
 // readGzFile - reads a gzip file.
@@ -90,17 +91,25 @@ func CoocExtraction(filename string, u *Unigram, window int, replaceDigits bool,
 	// listener
 	go merger.listen()
 
-	// TODO: use some kind of buffer to only launch K jobs at once in parallel to avoid
-	// memory overload.
 	// speaker
-	for _, doc := range encodedDocs {
+	for i, doc := range encodedDocs {
 		go func(document []int) {
 			merger.input <- ExtractCooc(document, window)
 		}(doc)
+		if (i+1)%BUFFERSIZE == 0 { // Give some slack to let things catch up.
+			for {
+				if len(merger.input) == 0 {
+					break
+				} else {
+					time.Sleep(250 * time.Millisecond)
+				}
+			}
+			logger.Log(fmt.Sprintf("\t%d docs launched and merged", i+1))
+		}
 	}
 	<-merger.done
 
 	// Finished!
-	logger.Log("Finished.")
+	logger.Log("\tfinished Cooc extraction!")
 	return merger.state
 }

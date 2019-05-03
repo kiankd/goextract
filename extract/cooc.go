@@ -5,6 +5,7 @@ import (
 	"log"
 	"math"
 	"os"
+	"strings"
 )
 
 // Cooc - Cooccurrence counter.
@@ -31,11 +32,19 @@ func (c1 *Cooc) Merge(c2 *Cooc) {
 func SerializeCooc(c *Cooc, fullPath string) error {
 	if f, err := os.Create(fullPath); err == nil {
 		defer f.Close()
+		bsize := int(len(c.counter) / 100)
+		var str strings.Builder
+		i := 0
 		for cantor, count := range c.counter {
-			f.WriteString(fmt.Sprintf("%d %f\n", cantor, count))
+			str.WriteString(fmt.Sprintf("%d %f\n", cantor, count))
+			i++
+			if i%bsize == 0 || i == len(c.counter) {
+				f.WriteString(str.String())
+				str.Reset()
+			}
 		}
 	} else {
-		log.Fatal("Cannot write unigram.")
+		log.Fatal("Cannot write cooc.")
 		return err
 	}
 	return nil

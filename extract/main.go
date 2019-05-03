@@ -179,10 +179,11 @@ func main() {
 		if cPth == "" {
 			cPth = fmt.Sprintf("coocs/%s.cooc", exPath)
 		}
+		l.Log("Serializing coocs...")
 		SerializeCooc(c, cPth)
 
 	} else if *extractOption == "cooc-merge" {
 		mergeCoocs(*coocPath, l)
 	}
-
+	l.Log("Finished.")
 }
