@@ -1,39 +1,15 @@
 package main
 
 import (
-	"compress/gzip"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"strings"
 	"time"
 )
 
-// readGzFile - reads a gzip file.
-func readGzFile(filename string) ([]byte, error) {
-	fi, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-	defer fi.Close()
-
-	fz, err := gzip.NewReader(fi)
-	if err != nil {
-		return nil, err
-	}
-	defer fz.Close()
-
-	s, err := ioutil.ReadAll(fz)
-	if err != nil {
-		return nil, err
-	}
-	return s, nil
-}
-
 // ReadParseGz - reads a gzip and then parses it into documents.
 func ReadParseGz(filename string, replaceDigits bool, logger *Logger) [][]string {
 	logger.Log(fmt.Sprintf("Reading GZ file %s...", filename))
-	byteArr, _ := readGzFile(filename)
+	byteArr, _ := ReadGzFile(filename)
 
 	logger.Log("\tconverting to strings...")
 	fullStr := string(byteArr)

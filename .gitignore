@@ -3,4 +3,4 @@
 *.unigram
 *.cooc
 extract/extract
-allspm.paths
+*.paths

@@ -11,30 +11,6 @@ import (
 	"github.com/pkg/profile"
 )
 
-func runExample() {
-}
-
-// 	l := ConstructLogger("print")
-// 	u, c := FullExtraction("../data/sample.txt.gz", 1e4, 25, false, l)
-// 	fmt.Printf("\nLength of c: %d\n\n", len(c.counter))
-// 	i := 0
-// 	for cantorCode, count := range c.counter {
-// 		x, y := InverseCantor(cantorCode)
-// 		wX := u.Decode(x)
-// 		wY := u.Decode(y)
-// 		fmt.Printf("(%16s, %15s): %f\n", wX, wY, count)
-// 		i++
-// 		if i > 2 {
-// 			break
-// 		}
-// 	}
-// 	codeOf := u.Encode("▁of")
-// 	codeThe := u.Encode("▁the")
-// 	cantor := CantorPairing(int64(codeOf), int64(codeThe))
-// 	fmt.Println()
-// 	fmt.Printf("(▁of, ▁the): %f\n", c.counter[cantor])
-// }
-
 func loadExperimentPath(extractPath string) string {
 	var paths []string
 	if strings.HasSuffix(extractPath, ".paths") {
@@ -61,16 +37,49 @@ func loadExperimentPath(extractPath string) string {
 	return paths[0]
 }
 
+// Does checks for the CLI.
+func checkArgs(opt, exP, uP, cP *string, v, w *int) {
+	emptyExp := *exP == ""
+	emptyUni := *uP == ""
+	emptyCoo := *cP == ""
+	emptyVoc := *v <= 0
+	emptyWin := *w <= 0
+	switch *opt {
+	case "unigram-merge":
+		if emptyUni {
+			panic("No path specified for unigram-merging!")
+		}
+	case "cooc-merge":
+		if emptyCoo {
+			panic("No path specified for cooc-merging!")
+		}
+	case "unigram":
+		if emptyExp || emptyUni {
+			panic("No paths specified for unigram extraction!")
+		}
+	case "cooc":
+		if emptyExp || emptyCoo || emptyVoc || emptyWin {
+			panic("Cooc extraction needs exp, coocpath, vocabsize, and window! Missing!")
+		}
+	default:
+		panic(fmt.Sprintf("Option %s is invalid!\n", *opt))
+	}
+}
+
 // Merge these boys!
 func mergeUnigrams(unigramPath string, l *Logger) {
-	u := ConstructUnigram()
+	var u *Unigram
 	uFiles, _ := ioutil.ReadDir(unigramPath)
 	for _, file := range uFiles {
 		n := file.Name()
 		if strings.HasSuffix(n, ".unigram") && !strings.HasPrefix(n, "merged") {
 			l.Log(fmt.Sprintf("\tmerging %s...\n", n))
 			u2 := LoadUnigram(unigramPath + n)
-			u.Merge(u2)
+			if u == nil {
+				u = u2
+			} else {
+				u.Merge(u2)
+			}
 		}
 	}
 	u.FillIdx()
@@ -84,10 +93,9 @@ func mergeCoocs(coocPath string, l *Logger) {
 	cFiles, _ := ioutil.ReadDir(coocPath)
 	for _, file := range cFiles {
 		n := file.Name()
-		if strings.HasSuffix(n, ".cooc") && !strings.HasPrefix(n, "merged") {
-			l.Log(fmt.Sprintf("\tmerging %s...\n", n))
-			c2 := LoadCooc(coocPath + n)
-			c.Merge(c2)
+		if strings.Contains(n, ".cooc") && !strings.HasPrefix(n, "merged") {
+			l.Log(fmt.Sprintf("\tloading %s...", n))
+			LoadCooc(c, coocPath+n, l)
 		}
 	}
 	SerializeCooc(c, coocPath+"merged.cooc")
@@ -95,12 +103,28 @@ func mergeCoocs(coocPath string, l *Logger) {
 
 func main() {
 	var extractPath string
-	flag.StringVar(&extractPath, "extract", "../data/sample.txt.gz",
-		"path to the target gz file we will be extracting")
 
-	extractOption := flag.String("option", "unigram",
+	// Required argument
+	extractOption := flag.String("option", "",
 		"option for extraction, \"unigram\" or \"cooc\"; add \"-merge\" to merge?")
 
+	// possibly required arguments
+	flag.StringVar(&extractPath, "e", "",
+		"path to the target gz file we will be extracting")
+
+	unigramPath := flag.String("U", "",
+		"path to the unigram to pre-load, if desired")
+
+	coocPath := flag.String("C", "",
+		"path for where to save Coocs, if desired")
+
+	vocabSize := flag.Int("v", -1,
+		"desired size of the vocabulary to perform extraction")
+
+	window := flag.Int("w", -1,
+		"window size, an integer indicating it (only dynamic weighting for now)")
+
+	// Optional arguments.
 	debug := flag.Bool("debug", false,
 		"whether to run a debug profiler")
 
@@ -110,37 +134,16 @@ func main() {
 	logOption := flag.String("log", "print",
 		"option for writing, printing, or silence [write, print, silent]")
 
-	unigramPath := flag.String("u", "",
-		"path to the unigram to pre-load, if desired")
-
-	coocPath := flag.String("c", "",
-		"path for where to save Coocs, if desired")
-
-	doExample := flag.Bool("example", false,
-		"run a simple example run and exit")
-
 	replaceDigits := flag.Bool("nodigits", false,
 		"replace all digits with 0s during extraction")
 
-	vocabSize := flag.Int("vocab", -1,
-		"desired size of the vocabulary to perform extraction")
-
-	window := flag.Int("window", 5,
-		"window size, an integer indicating it (only dynamic weighting for now)")
-
 	flag.Parse()
 
-	// Check if we just want to do an example run.
-	if *doExample {
-		runExample()
-		return
-	}
+	// Check args.
+	checkArgs(extractOption, &extractPath, unigramPath, coocPath, vocabSize, window)
 
 	// TODO: pass to the logger all args and log them.
 	l := ConstructLogger(*logOption)
-
-	// Very beginning - ensure the file exists, and parse if there are multiple.
-	exPath := loadExperimentPath(extractPath)
 
 	// Now check if we are doing debugging stuff.
 	if *debug {
@@ -155,10 +158,15 @@ func main() {
 	var unigram *Unigram
 	uPth := *unigramPath
 
-	if *extractOption == "unigram-merge" {
+	switch *extractOption {
+	case "unigram-merge":
 		mergeUnigrams(uPth, l)
 
-	} else if *extractOption == "unigram" {
+	case "cooc-merge":
+		mergeCoocs(*coocPath, l)
+
+	case "unigram":
+		exPath := loadExperimentPath(extractPath)
 		l.Log(fmt.Sprintf("Will extract from path %s...", exPath))
 		if _, err := os.Stat(uPth); os.IsNotExist(err) {
 			l.Log("\textracting its unigram...")
@@ -166,24 +174,15 @@ func main() {
 			l.Log("\tserializing its unigram...")
 			SerializeUnigram(unigram, uPth)
 		}
-
-	} else if *extractOption == "cooc" {
+	case "cooc":
+		exPath := loadExperimentPath(extractPath)
 		l.Log(fmt.Sprintf("Loading unigram from %s...", uPth))
 		unigram = LoadUnigram(uPth)
-		if *vocabSize > 0 {
-			l.Log(fmt.Sprintf("Filtering unigram to %d most frequent tokens...", *vocabSize))
-			unigram = FilterUnigram(unigram, *vocabSize)
-		}
+		l.Log(fmt.Sprintf("Filtering unigram to %d most frequent tokens...", *vocabSize))
+		unigram = FilterUnigram(unigram, *vocabSize)
 		c := CoocExtraction(exPath, unigram, *window, *replaceDigits, l)
-		cPth := *coocPath
-		if cPth == "" {
-			cPth = fmt.Sprintf("coocs/%s.cooc", exPath)
-		}
 		l.Log("Serializing coocs...")
-		SerializeCooc(c, cPth)
-
-	} else if *extractOption == "cooc-merge" {
-		mergeCoocs(*coocPath, l)
+		SerializeCooc(c, *coocPath)
 	}
 	l.Log("Finished.")
 }

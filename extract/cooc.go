@@ -1,11 +1,7 @@
 package main
 
 import (
-	"fmt"
-	"log"
 	"math"
-	"os"
-	"strings"
 )
 
 // Cooc - Cooccurrence counter.
@@ -26,35 +22,6 @@ func (c1 *Cooc) Merge(c2 *Cooc) {
 	for cantor, count := range c2.counter {
 		c1.counter[cantor] += count
 	}
-}
-
-// SerializeCooc - Helper to write a Cooc to disk.
-func SerializeCooc(c *Cooc, fullPath string) error {
-	if f, err := os.Create(fullPath); err == nil {
-		defer f.Close()
-		bsize := int(len(c.counter) / 100)
-		var str strings.Builder
-		i := 0
-		for cantor, count := range c.counter {
-			str.WriteString(fmt.Sprintf("%d %f\n", cantor, count))
-			i++
-			if i%bsize == 0 || i == len(c.counter) {
-				f.WriteString(str.String())
-				str.Reset()
-			}
-		}
-	} else {
-		log.Fatal("Cannot write cooc.")
-		return err
-	}
-	return nil
-
-}
-
-// LoadCooc - loads a cooc!
-func LoadCooc(fullPath string) *Cooc {
-	c := ConstructCooc()
-	return c
 }
 
 // ConstructCooc constructor
