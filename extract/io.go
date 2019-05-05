@@ -2,6 +2,7 @@ package main
 
 import (
 	"compress/gzip"
+	"encoding/gob"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -95,45 +96,26 @@ func LoadUnigram(fullPath string) *Unigram {
 
 /* IO for Coocs. */
 
-// SerializeCooc - Helper to write a Cooc to disk.
-func SerializeCooc(c *Cooc, fullPath string) error {
-	if f, err := os.Create(fullPath); err == nil {
-		defer f.Close()
-		bsize := int(len(c.counter) / 100)
-		var str strings.Builder
-		i := 0
-		for cantor, count := range c.counter {
-			str.WriteString(fmt.Sprintf("%d %f\n", cantor, count))
-			i++
-			if i%bsize == 0 || i == len(c.counter) {
-				f.WriteString(str.String())
-				str.Reset()
-			}
-		}
-	} else {
-		log.Fatal("Cannot write cooc.")
-		return err
+// SerializeCooc - Helper to write a Cooc to disk in binary (gob).
+func SerializeCooc(c *Cooc, fullPath string) {
+	encodeFile, err := os.Create(fullPath + ".gob")
+	if err != nil {
+		panic(err)
 	}
-	return nil
-
+	encoder := gob.NewEncoder(encodeFile)
+	if err := encoder.Encode(c.counter); err != nil {
+		panic(err)
+	}
+	encodeFile.Close()
 }
 
-// LoadCooc - loads a cooc!
-// TODO: turn this into a multi-processed big daddy, if possible.
+// LoadCooc - loads a cooc from the gob binary!
 func LoadCooc(into *Cooc, fullPath string, l *Logger) {
-	byteArr, _ := ReadGzFile(fullPath)
-	items := strings.Split(string(byteArr), "\n")
-	l.Log("\tfilling in Cooc...")
-	for i, line := range items {
-		split := strings.Split(line, " ")
-		if len(split) != 2 {
-			if i == len(items)-1 {
-				break
-			}
-			panic("Corrupted cooc file!")
-		}
-		cantor, _ := strconv.Atoi(split[0])
-		count, _ := strconv.ParseFloat(split[1], 64)
-		into.counter[int64(cantor)] += count
+	decodeFile, err := os.Open(fullPath + ".gob")
+	if err != nil {
+		panic(err)
 	}
+	defer decodeFile.Close()
+	decoder := gob.NewDecoder(decodeFile)
+	decoder.Decode(&into.counter)
 }
