@@ -116,7 +116,7 @@ func SerializeCooc(c *Cooc, fullPath string, l *Logger) {
 	keys, vals := divideMapData(c.Counter)
 	start := 0
 	end := GOBLEN
-	for fnum := 0; start >= len(keys); fnum++ {
+	for fnum := 0; start < len(keys); fnum++ {
 		if end > len(keys) {
 			end = len(keys)
 		}
