@@ -7,9 +7,13 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
+
+// GOBLEN - max num of items for a .gob file. 50 million.
+const GOBLEN int = 5 * 1e7
 
 /* Basic IO helpers. */
 
@@ -95,68 +99,58 @@ func LoadUnigram(fullPath string) *Unigram {
 }
 
 /* IO for Coocs. */
-func splitMap(m map[int64]float64) (m1, m2 map[int64]float64) {
-	m1 = make(map[int64]float64, len(m)/2+1)
-	m2 = make(map[int64]float64, len(m)/2+1)
-	b := true
-	for key, value := range m {
-		if b {
-			m1[key] = value
-			b = false
-		} else {
-			m2[key] = value
-			b = true
-		}
+func divideMapData(m map[int64]float64) ([]int64, []float64) {
+	keys := make([]int64, len(m))
+	vals := make([]float64, len(m))
+	i := 0
+	for key, val := range m {
+		keys[i] = key
+		vals[i] = val
+		i++
 	}
-	return
+	return keys, vals
 }
 
 // SerializeCooc - Helper to write a Cooc to disk in binary (gob).
 func SerializeCooc(c *Cooc, fullPath string, l *Logger) {
-	encodeFile, err := os.Create(fullPath + ".gob0")
-	if err != nil {
-		panic(err)
-	}
-	encoder := gob.NewEncoder(encodeFile)
-	if err := encoder.Encode(c.Counter); err != nil {
-		l.Log("Cooc too big, splitting into 2 files...")
-		map1, map2 := splitMap(c.Counter)
-		l.Log("\tencoding gob0...")
-		e1 := encoder.Encode(map1)
-		if e1 != nil {
-			panic(e1)
+	keys, vals := divideMapData(c.Counter)
+	start := 0
+	end := GOBLEN
+	for fnum := 0; start >= len(keys); fnum++ {
+		if end > len(keys) {
+			end = len(keys)
 		}
-		l.Log("\tencoding gob1...")
-		encodeFile2, err := os.Create(fullPath + ".gob1")
+		encodeFile, err := os.Create(fmt.Sprintf("%s.gob%d", fullPath, fnum))
 		if err != nil {
 			panic(err)
 		}
-		encoder2 := gob.NewEncoder(encodeFile2)
-		e2 := encoder2.Encode(map2)
-		if e2 != nil {
-			panic(e2)
+		encoder := gob.NewEncoder(encodeFile)
+		err = encoder.Encode(CoocData{keys[start:end], vals[start:end]})
+		if err != nil {
+			panic(err)
 		}
+		encodeFile.Close()
+		start += GOBLEN
+		end += GOBLEN
 	}
-	encodeFile.Close()
 }
 
 // LoadCooc - loads a cooc from the gob binary!
 func LoadCooc(into *Cooc, fullPath string, l *Logger) {
-	l.Log("\tloading gob0...")
-	decodeFile, err := os.Open(fullPath + ".gob0")
+	files, err := filepath.Glob(fullPath + ".gob*")
 	if err != nil {
 		panic(err)
 	}
-	defer decodeFile.Close()
-	decoder := gob.NewDecoder(decodeFile)
-	decoder.Decode(&into.Counter)
-
-	decodeFile2, err2 := os.Open(fullPath + ".gob1")
-	if err2 != nil {
-		return
+	for _, f := range files {
+		l.Log("\tloading " + f + "...")
+		decodeFile, err := os.Open(f)
+		if err != nil {
+			panic(err)
+		}
+		coocData := CoocData{}
+		decoder := gob.NewDecoder(decodeFile)
+		decoder.Decode(&coocData)
+		into.LoadCoocData(coocData)
+		decodeFile.Close()
 	}
-	l.Log("\tloading gob1...")
-	defer decodeFile2.Close()
-	decoder2 := gob.NewDecoder(decodeFile2)
-	decoder2.Decode(&into.Counter)
 }

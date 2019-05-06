@@ -4,23 +4,36 @@ import (
 	"math"
 )
 
+// CoocData - for storage later
+type CoocData struct {
+	Keys []int64
+	Vals []float64
+}
+
 // Cooc - Cooccurrence counter.
 type Cooc struct {
 	Counter map[int64]float64
 }
 
-func (c1 *Cooc) deepCopy() *Cooc {
+func (c *Cooc) deepCopy() *Cooc {
 	c2 := ConstructCooc()
-	for cantor, count := range c1.Counter {
+	for cantor, count := range c.Counter {
 		c2.Counter[cantor] = count
 	}
 	return c2
 }
 
 // Merge - Cooc c1 eats the input Cooc, c2
-func (c1 *Cooc) Merge(c2 *Cooc) {
+func (c *Cooc) Merge(c2 *Cooc) {
 	for cantor, count := range c2.Counter {
-		c1.Counter[cantor] += count
+		c.Counter[cantor] += count
+	}
+}
+
+// LoadCoocData - load serialized data into it
+func (c *Cooc) LoadCoocData(d CoocData) {
+	for i := 0; i < len(d.Keys); i++ {
+		c.Counter[d.Keys[i]] += d.Vals[i]
 	}
 }
 

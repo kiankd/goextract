@@ -24,7 +24,7 @@ func TestCoocIO(t *testing.T) {
 	l := ConstructLogger("print")
 	documents := LoadSampleWords()
 	u := ExtractUnigram(documents)
-	c := CoocExtraction("../data/sample.txt.gz", u, 150, false, l)
+	c := CoocExtraction("../data/sample.txt.gz", u, 2, false, l)
 
 	l.Log("Seriailizing...")
 	SerializeCooc(c, "/tmp/ex.cooc", l)
