@@ -98,7 +98,7 @@ func mergeCoocs(coocPath string, l *Logger) {
 			LoadCooc(c, coocPath+n, l)
 		}
 	}
-	SerializeCooc(c, coocPath+"merged.cooc")
+	SerializeCooc(c, coocPath+"merged.cooc", l)
 }
 
 func main() {
@@ -182,7 +182,7 @@ func main() {
 		unigram = FilterUnigram(unigram, *vocabSize)
 		c := CoocExtraction(exPath, unigram, *window, *replaceDigits, l)
 		l.Log("Serializing coocs...")
-		SerializeCooc(c, *coocPath)
+		SerializeCooc(c, *coocPath, l)
 	}
 	l.Log("Finished.")
 }

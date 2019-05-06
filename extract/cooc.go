@@ -6,28 +6,28 @@ import (
 
 // Cooc - Cooccurrence counter.
 type Cooc struct {
-	counter map[int64]float64
+	Counter map[int64]float64
 }
 
 func (c1 *Cooc) deepCopy() *Cooc {
 	c2 := ConstructCooc()
-	for cantor, count := range c1.counter {
-		c2.counter[cantor] = count
+	for cantor, count := range c1.Counter {
+		c2.Counter[cantor] = count
 	}
 	return c2
 }
 
 // Merge - Cooc c1 eats the input Cooc, c2
 func (c1 *Cooc) Merge(c2 *Cooc) {
-	for cantor, count := range c2.counter {
-		c1.counter[cantor] += count
+	for cantor, count := range c2.Counter {
+		c1.Counter[cantor] += count
 	}
 }
 
 // ConstructCooc constructor
 func ConstructCooc() *Cooc {
 	cooc := Cooc{
-		counter: make(map[int64]float64)}
+		Counter: make(map[int64]float64)}
 	return &cooc
 }
 
@@ -74,7 +74,7 @@ func ExtractCooc(encodedDoc []int, window int) *Cooc {
 		for j := start; j < end; j++ {
 			if i != j {
 				cantor := CantorPairing(int64(term), int64(encodedDoc[j]))
-				cooc.counter[cantor] += Weighting(i, j, float64(window))
+				cooc.Counter[cantor] += Weighting(i, j, float64(window))
 			}
 		}
 	}

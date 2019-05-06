@@ -95,27 +95,68 @@ func LoadUnigram(fullPath string) *Unigram {
 }
 
 /* IO for Coocs. */
+func splitMap(m map[int64]float64) (m1, m2 map[int64]float64) {
+	m1 = make(map[int64]float64, len(m)/2+1)
+	m2 = make(map[int64]float64, len(m)/2+1)
+	b := true
+	for key, value := range m {
+		if b {
+			m1[key] = value
+			b = false
+		} else {
+			m2[key] = value
+			b = true
+		}
+	}
+	return
+}
 
 // SerializeCooc - Helper to write a Cooc to disk in binary (gob).
-func SerializeCooc(c *Cooc, fullPath string) {
-	encodeFile, err := os.Create(fullPath + ".gob")
+func SerializeCooc(c *Cooc, fullPath string, l *Logger) {
+	encodeFile, err := os.Create(fullPath + ".gob0")
 	if err != nil {
 		panic(err)
 	}
 	encoder := gob.NewEncoder(encodeFile)
-	if err := encoder.Encode(c.counter); err != nil {
-		panic(err)
+	if err := encoder.Encode(c.Counter); err != nil {
+		l.Log("Cooc too big, splitting into 2 files...")
+		map1, map2 := splitMap(c.Counter)
+		l.Log("\tencoding gob0...")
+		e1 := encoder.Encode(map1)
+		if e1 != nil {
+			panic(e1)
+		}
+		l.Log("\tencoding gob1...")
+		encodeFile2, err := os.Create(fullPath + ".gob1")
+		if err != nil {
+			panic(err)
+		}
+		encoder2 := gob.NewEncoder(encodeFile2)
+		e2 := encoder2.Encode(map2)
+		if e2 != nil {
+			panic(e2)
+		}
 	}
 	encodeFile.Close()
 }
 
 // LoadCooc - loads a cooc from the gob binary!
 func LoadCooc(into *Cooc, fullPath string, l *Logger) {
-	decodeFile, err := os.Open(fullPath + ".gob")
+	l.Log("\tloading gob0...")
+	decodeFile, err := os.Open(fullPath + ".gob0")
 	if err != nil {
 		panic(err)
 	}
 	defer decodeFile.Close()
 	decoder := gob.NewDecoder(decodeFile)
-	decoder.Decode(&into.counter)
+	decoder.Decode(&into.Counter)
+
+	decodeFile2, err2 := os.Open(fullPath + ".gob1")
+	if err2 != nil {
+		return
+	}
+	l.Log("\tloading gob1...")
+	defer decodeFile2.Close()
+	decoder2 := gob.NewDecoder(decodeFile2)
+	decoder2.Decode(&into.Counter)
 }

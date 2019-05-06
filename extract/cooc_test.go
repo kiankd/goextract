@@ -11,13 +11,13 @@ func TestExtractCooc(t *testing.T) {
 	encodedDocs := UnigramEncode(u, documents)
 
 	c := ExtractCooc(encodedDocs[0], 20)
-	fmt.Printf("Length of Cooc: %d\n", len(c.counter))
+	fmt.Printf("Length of Cooc: %d\n", len(c.Counter))
 	fmt.Printf("Number of documents: %d\n", len(documents))
 
 	// TODO: write actual tests for cooc extract
 	if false {
 		i := 0
-		for code, count := range c.counter {
+		for code, count := range c.Counter {
 			fmt.Printf("\t%d: %f\n", code, count)
 			i++
 			if i > 50 {
@@ -65,12 +65,12 @@ func TestCoocMerge(t *testing.T) {
 	eater1.Merge(c2)
 	eater2.Merge(c1copy)
 
-	if len(eater1.counter) != len(eater2.counter) {
+	if len(eater1.Counter) != len(eater2.Counter) {
 		t.Error("Different lengths! Not a bijection!")
 	}
 
-	for cantor, c1count := range eater1.counter {
-		if c1count != eater2.counter[cantor] {
+	for cantor, c1count := range eater1.Counter {
+		if c1count != eater2.Counter[cantor] {
 			t.Error("Different counts for a cantor code!")
 		}
 	}
