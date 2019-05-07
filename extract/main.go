@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"sort"
 	"strings"
 
 	"github.com/pkg/profile"
@@ -46,8 +45,8 @@ func checkArgs(opt, exP, uP, cP *string, v, w *int) {
 	emptyWin := *w <= 0
 	switch *opt {
 	case "unigram-merge":
-		if emptyUni {
-			panic("No path specified for unigram-merging!")
+		if emptyUni || emptyVoc {
+			panic("No path specified for unigram-merging & no vocab size passed!")
 		}
 	case "cooc-merge":
 		if emptyCoo {
@@ -70,7 +69,7 @@ func checkArgs(opt, exP, uP, cP *string, v, w *int) {
 }
 
 // Merge these boys!
-func mergeUnigrams(unigramPath string, l *Logger) {
+func mergeUnigrams(unigramPath string, vocabSize int, l *Logger) {
 	var u *Unigram
 	uFiles, _ := ioutil.ReadDir(unigramPath)
 	for _, file := range uFiles {
@@ -86,8 +85,8 @@ func mergeUnigrams(unigramPath string, l *Logger) {
 		}
 	}
 	u.FillIdx()
-	sort.Sort(u)
-	SerializeUnigram(u, unigramPath+"merged.unigram")
+	fu := FilterUnigram(u, vocabSize)
+	SerializeUnigram(fu, unigramPath+"merged.unigram")
 }
 
 // Merge those boys!
@@ -164,7 +163,7 @@ func main() {
 
 	switch *extractOption {
 	case "unigram-merge":
-		mergeUnigrams(uPth, l)
+		mergeUnigrams(uPth, *vocabSize, l)
 
 	case "cooc-merge":
 		mergeCoocs(*coocPath, l)
@@ -182,8 +181,6 @@ func main() {
 		exPath := loadExperimentPath(extractPath)
 		l.Log(fmt.Sprintf("Loading unigram from %s...", uPth))
 		unigram = LoadUnigram(uPth)
-		l.Log(fmt.Sprintf("Filtering unigram to %d most frequent tokens...", *vocabSize))
-		unigram = FilterUnigram(unigram, *vocabSize)
 		c := CoocExtraction(exPath, unigram, *window, *replaceDigits, l)
 		l.Log("Serializing coocs...")
 		SerializeCooc(c, *coocPath, l)
