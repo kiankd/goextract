@@ -21,6 +21,9 @@ const STRBUF int = 1e6
 // MINCOUNT - minimum value for the Nij statistics.
 const MINCOUNT float64 = 100
 
+// VERYMINCOUNT - the very min value for Nij statistics during preliminary extraction.
+const VERYMINCOUNT float64 = 5
+
 /* Basic IO helpers. */
 
 // ReadGzFile - reads a gzip file.
@@ -111,7 +114,7 @@ func divideAndFilterMapData(m map[int64]float64) ([]int64, []float64) {
 	keys := make([]int64, 0, len(m))
 	vals := make([]float64, 0, len(m))
 	for key, count := range m {
-		if count > MINCOUNT/2 {
+		if count > VERYMINCOUNT {
 			keys = append(keys, key)
 			vals = append(vals, count)
 		}
