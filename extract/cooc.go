@@ -10,6 +10,13 @@ type CoocData struct {
 	Vals []float64
 }
 
+// LoadCoocData - load serialized data into it
+func (c *Cooc) LoadCoocData(d CoocData) {
+	for i := 0; i < len(d.Keys); i++ {
+		c.Counter[d.Keys[i]] += d.Vals[i]
+	}
+}
+
 // Cooc - Cooccurrence counter.
 type Cooc struct {
 	Counter map[int64]float64
@@ -27,13 +34,6 @@ func (c *Cooc) deepCopy() *Cooc {
 func (c *Cooc) Merge(c2 *Cooc) {
 	for cantor, count := range c2.Counter {
 		c.Counter[cantor] += count
-	}
-}
-
-// LoadCoocData - load serialized data into it
-func (c *Cooc) LoadCoocData(d CoocData) {
-	for i := 0; i < len(d.Keys); i++ {
-		c.Counter[d.Keys[i]] += d.Vals[i]
 	}
 }
 

@@ -101,7 +101,8 @@ func mergeCoocs(coocsDir string, l *Logger) {
 			LoadSingleCooc(into, coocsDir+s)
 		}
 	}
-	SaveCooc(into, coocsDir+"merged.cooc", l)
+	l.Log("\tsaving coocs...")
+	SaveCooc(into, coocsDir+"merged.cooc")
 }
 
 func main() {

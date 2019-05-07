@@ -21,7 +21,7 @@ func TestUnigramIO(t *testing.T) {
 }
 
 func TestCoocIO(t *testing.T) {
-	l := ConstructLogger("print")
+	l := ConstructLogger("silent")
 	documents := LoadSampleWords()
 	u := ExtractUnigram(documents)
 	c := CoocExtraction("../data/sample.txt.gz", u, 2, false, l)
@@ -32,9 +32,6 @@ func TestCoocIO(t *testing.T) {
 	l.Log("Loading...")
 	LoadCooc(c2, "/tmp/ex.cooc", l)
 
-	if len(c.Counter) != len(c2.Counter) {
-		t.Errorf("Different length after serializing! %d orig vs %d\n", len(c.Counter), len(c2.Counter))
-	}
 	for code, count := range c2.Counter {
 		if c.Counter[code] != count {
 			t.Error("Different counts after serializing!")
@@ -43,7 +40,7 @@ func TestCoocIO(t *testing.T) {
 }
 
 func TestMerge(t *testing.T) {
-	l := ConstructLogger("print")
+	l := ConstructLogger("silent")
 	documents := LoadSampleWords()
 	u := ExtractUnigram(documents)
 	c := CoocExtraction("../data/sample.txt.gz", u, 2, false, l)

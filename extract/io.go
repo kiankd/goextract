@@ -12,11 +12,14 @@ import (
 	"strings"
 )
 
-// GOBLEN - max num of items for a .gob file. 50 million.
-const GOBLEN int = 5 * 1e7
+// GOBLEN - max num of items for a .gob file. 70 million.
+const GOBLEN int = 7 * 1e7
 
 // STRBUF - max num of strs for a .txt file write buffer, 1 million.
 const STRBUF int = 1e6
+
+// MINCOUNT - minimum value for the Nij statistics.
+const MINCOUNT float64 = 100
 
 /* Basic IO helpers. */
 
@@ -102,21 +105,23 @@ func LoadUnigram(fullPath string) *Unigram {
 }
 
 /* IO for Coocs. */
-func divideMapData(m map[int64]float64) ([]int64, []float64) {
-	keys := make([]int64, len(m))
-	vals := make([]float64, len(m))
-	i := 0
-	for key, val := range m {
-		keys[i] = key
-		vals[i] = val
-		i++
+
+// Filters out the counts that are too small before serializing.
+func divideAndFilterMapData(m map[int64]float64) ([]int64, []float64) {
+	keys := make([]int64, 0, len(m))
+	vals := make([]float64, 0, len(m))
+	for key, count := range m {
+		if count > MINCOUNT/2 {
+			keys = append(keys, key)
+			vals = append(vals, count)
+		}
 	}
 	return keys, vals
 }
 
 // SerializeCooc - Helper to write a Cooc to disk in binary (gob).
 func SerializeCooc(c *Cooc, fullPath string, l *Logger) {
-	keys, vals := divideMapData(c.Counter)
+	keys, vals := divideAndFilterMapData(c.Counter)
 	start := 0
 	end := GOBLEN
 	for fnum := 0; start < len(keys); fnum++ {
@@ -165,23 +170,26 @@ func LoadSingleCooc(into *Cooc, fullPath string) {
 }
 
 // SaveCooc - saves it into easy-readable text format.
-func SaveCooc(c *Cooc, fullPath string, l *Logger) {
+func SaveCooc(c *Cooc, fullPath string) {
 	fi, err := os.Create(fullPath)
 	if err != nil {
 		panic(err)
 	}
 	defer fi.Close()
 
-	i := 0
+	i, b := 0, 0
 	var str strings.Builder
 	for cantor, count := range c.Counter {
-		if i == STRBUF {
+		if b == STRBUF || i == len(c.Counter)-1 {
 			fi.WriteString(str.String())
 			str.Reset()
-			i = 0
+			b = 0
 		}
-		k1, k2 := InverseCantor(cantor)
-		str.WriteString(fmt.Sprintf("%d %d %f\n", k1, k2, count))
+		if count >= MINCOUNT {
+			k1, k2 := InverseCantor(cantor)
+			str.WriteString(fmt.Sprintf("%d %d %f\n", k1, k2, count))
+			b++
+		}
 		i++
 	}
 }
