@@ -41,3 +41,14 @@ func TestCoocIO(t *testing.T) {
 		}
 	}
 }
+
+func TestMerge(t *testing.T) {
+	l := ConstructLogger("print")
+	documents := LoadSampleWords()
+	u := ExtractUnigram(documents)
+	c := CoocExtraction("../data/sample.txt.gz", u, 2, false, l)
+	l.Log("Seriailizing...")
+	SerializeCooc(c, "/tmp/ex.cooc", l)
+	l.Log("Merging...")
+	mergeCoocs("/tmp/", l)
+}

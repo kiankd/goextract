@@ -52,7 +52,10 @@ func checkArgs(opt, exP, uP, cP *string, v, w *int) {
 	case "cooc-merge":
 		if emptyCoo {
 			panic("No path specified for cooc-merging!")
+		} else if !strings.HasPrefix(*cP, "/") {
+			panic("Trying to merge coocs, but need a directory!")
 		}
+
 	case "unigram":
 		if emptyExp || emptyUni {
 			panic("No paths specified for unigram extraction!")
@@ -88,17 +91,17 @@ func mergeUnigrams(unigramPath string, l *Logger) {
 }
 
 // Merge those boys!
-func mergeCoocs(coocPath string, l *Logger) {
-	c := ConstructCooc()
-	cFiles, _ := ioutil.ReadDir(coocPath)
+func mergeCoocs(coocsDir string, l *Logger) {
+	into := ConstructCooc()
+	cFiles, _ := ioutil.ReadDir(coocsDir)
 	for _, file := range cFiles {
-		n := file.Name()
-		if strings.Contains(n, ".cooc") && !strings.HasPrefix(n, "merged") {
-			l.Log(fmt.Sprintf("\tloading %s...", n))
-			LoadCooc(c, coocPath+n, l)
+		s := file.Name()
+		if strings.Contains(s, ".cooc") && !strings.Contains(s, "merged") {
+			l.Log(fmt.Sprintf("\tloading %s...", s))
+			LoadSingleCooc(into, coocsDir+s)
 		}
 	}
-	SerializeCooc(c, coocPath+"merged.cooc", l)
+	SaveCooc(into, coocsDir+"merged.cooc", l)
 }
 
 func main() {

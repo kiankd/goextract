@@ -15,6 +15,9 @@ import (
 // GOBLEN - max num of items for a .gob file. 50 million.
 const GOBLEN int = 5 * 1e7
 
+// STRBUF - max num of strs for a .txt file write buffer, 1 million.
+const STRBUF int = 1e6
+
 /* Basic IO helpers. */
 
 // ReadGzFile - reads a gzip file.
@@ -124,6 +127,7 @@ func SerializeCooc(c *Cooc, fullPath string, l *Logger) {
 		if err != nil {
 			panic(err)
 		}
+		l.Log("\tserializing " + encodeFile.Name())
 		encoder := gob.NewEncoder(encodeFile)
 		err = encoder.Encode(CoocData{keys[start:end], vals[start:end]})
 		if err != nil {
@@ -143,14 +147,41 @@ func LoadCooc(into *Cooc, fullPath string, l *Logger) {
 	}
 	for _, f := range files {
 		l.Log("\tloading " + f + "...")
-		decodeFile, err := os.Open(f)
-		if err != nil {
-			panic(err)
+		LoadSingleCooc(into, f)
+	}
+}
+
+// LoadSingleCooc - loads a single cooc file into a Cooc
+func LoadSingleCooc(into *Cooc, fullPath string) {
+	decodeFile, err := os.Open(fullPath)
+	if err != nil {
+		panic(err)
+	}
+	coocData := CoocData{}
+	decoder := gob.NewDecoder(decodeFile)
+	decoder.Decode(&coocData)
+	into.LoadCoocData(coocData)
+	decodeFile.Close()
+}
+
+// SaveCooc - saves it into easy-readable text format.
+func SaveCooc(c *Cooc, fullPath string, l *Logger) {
+	fi, err := os.Create(fullPath)
+	if err != nil {
+		panic(err)
+	}
+	defer fi.Close()
+
+	i := 0
+	var str strings.Builder
+	for cantor, count := range c.Counter {
+		if i == STRBUF {
+			fi.WriteString(str.String())
+			str.Reset()
+			i = 0
 		}
-		coocData := CoocData{}
-		decoder := gob.NewDecoder(decodeFile)
-		decoder.Decode(&coocData)
-		into.LoadCoocData(coocData)
-		decodeFile.Close()
+		k1, k2 := InverseCantor(cantor)
+		str.WriteString(fmt.Sprintf("%d %d %f\n", k1, k2, count))
+		i++
 	}
 }
