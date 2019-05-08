@@ -137,8 +137,8 @@ func TestUnigramEncode(t *testing.T) {
 			if wordHat != word {
 				t.Errorf("Decoding error: should be %s but got %s\n", word, wordHat)
 			}
-			codeHat := u.Encode(word)
-			if code != codeHat {
+			codeHat, oov := u.Encode(word)
+			if code != codeHat && !oov {
 				t.Errorf("Encoding error: should be %d but got %d\n", code, codeHat)
 			}
 		}

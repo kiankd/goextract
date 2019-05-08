@@ -50,12 +50,12 @@ func (u *Unigram) Decode(code int) string {
 	return u.decoder[u.encoder[OOV]]
 }
 
-// Encode - encodes a single string
-func (u *Unigram) Encode(str string) int {
+// Encode - encodes a single string, returns "code" and a bool "is-OOV"
+func (u *Unigram) Encode(str string) (int, bool) {
 	if code, ok := u.encoder[str]; ok {
-		return code
+		return code, false
 	}
-	return u.encoder[OOV]
+	return u.encoder[OOV], true
 }
 
 // Merge - Unigram u eats another Unigram u2.
@@ -185,14 +185,17 @@ func UnigramEncode(u *Unigram, documents [][]string) [][]int {
 		done <- true
 	}()
 
-	// speaker, puts the idx in there to always retain order!
+	// Speaker, puts the idx in there to always retain order!
 	for d, document := range documents {
 		go func(idx int, doc []string) {
-			codes := make([]int, len(doc)+1)
-			for i, word := range doc {
-				codes[i] = u.Encode(word)
+			codes := make([]int, 0, len(doc)+1)
+			for _, word := range doc {
+				// Purge OOV words!
+				if code, oov := u.Encode(word); !oov {
+					codes = append(codes, code)
+				}
 			}
-			codes[len(doc)] = idx
+			codes = append(codes, idx)
 			ch <- codes
 		}(d, document)
 	}
