@@ -37,12 +37,12 @@ func loadExperimentPath(extractPath string) string {
 }
 
 // Does checks for the CLI.
-func checkArgs(opt, exP, uP, cP *string, v, w *int) {
+func checkArgs(opt, exP, uP, cP *string, v, w *int, winF *string) {
 	emptyExp := *exP == ""
 	emptyUni := *uP == ""
 	emptyCoo := *cP == ""
 	emptyVoc := *v <= 0
-	emptyWin := *w <= 0
+	emptyWin := *w <= 0 || *winF == ""
 	switch *opt {
 	case "unigram-merge":
 		if emptyUni || emptyVoc {
@@ -127,6 +127,9 @@ func main() {
 	window := flag.Int("w", -1,
 		"window size, an integer indicating it (only dynamic weighting for now)")
 
+	windowF := flag.String("window", "",
+		"path to a file containing window weights, formatted as shown in example.w")
+
 	// Optional arguments.
 	debug := flag.Bool("debug", false,
 		"whether to run a debug profiler")
@@ -143,7 +146,7 @@ func main() {
 	flag.Parse()
 
 	// Check args.
-	checkArgs(extractOption, &extractPath, unigramPath, coocPath, vocabSize, window)
+	checkArgs(extractOption, &extractPath, unigramPath, coocPath, vocabSize, window, windowF)
 
 	// TODO: pass to the logger all args and log them.
 	l := ConstructLogger(*logOption)
@@ -181,7 +184,8 @@ func main() {
 		exPath := loadExperimentPath(extractPath)
 		l.Log(fmt.Sprintf("Loading unigram from %s...", uPth))
 		unigram = LoadUnigram(uPth)
-		c := CoocExtraction(exPath, unigram, *window, *replaceDigits, l)
+		window := MakeWindow(*window, *windowF)
+		c := CoocExtraction(exPath, unigram, window, *replaceDigits, l)
 		l.Log("Serializing coocs...")
 		SerializeCooc(c, *coocPath, l)
 	}

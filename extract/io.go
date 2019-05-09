@@ -196,3 +196,52 @@ func SaveCooc(c *Cooc, fullPath string) {
 		i++
 	}
 }
+
+func parseWeightsStr(wstr []string) []float64 {
+	weights := make([]float64, len(wstr))
+	for i := 0; i < len(wstr); i++ {
+		w, err := strconv.ParseFloat(wstr[i], 64)
+		if err != nil {
+			panic(err)
+		}
+		weights[i] = w
+	}
+	return weights
+}
+
+// LoadCustomWeights - helps for loading custom weight files.
+func LoadCustomWeights(fullPath string) ([]float64, []float64) {
+	wFile, err := os.Open(fullPath)
+	if err != nil {
+		panic(err)
+	}
+	if bytes, err := ioutil.ReadAll(wFile); err == nil {
+		var lWeightsStr []string
+		var rWeightsStr []string
+
+		fullStr := string(bytes)
+		lines := strings.Split(fullStr, "\n")
+		for _, line := range lines {
+			// Allows user to make comments in their weight files.
+			if strings.HasPrefix(line, "#") || line == "\n" {
+				continue
+			}
+			if len(lWeightsStr) == 0 {
+				lWeightsStr = strings.Split(line, " ")
+			} else if len(rWeightsStr) == 0 {
+				rWeightsStr = strings.Split(line, " ")
+				break
+			}
+		}
+		if len(lWeightsStr) == 0 || len(rWeightsStr) == 0 {
+			panic("Empty weight string!")
+		}
+		lW := parseWeightsStr(lWeightsStr)
+		rW := parseWeightsStr(rWeightsStr)
+		if (len(lW) > 1 && lW[len(lW)-1] == 0) || (len(rW) > 1 && rW[len(rW)-1] == 0) {
+			panic(fmt.Sprintf("Improperly formatted weight strings! %s\n%s", lWeightsStr, rWeightsStr))
+		}
+		return lW, rW
+	}
+	panic(err)
+}

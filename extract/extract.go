@@ -51,7 +51,7 @@ func (m *CoocMerger) listen() {
 }
 
 // CoocExtraction - performs the full extraction pipeline.
-func CoocExtraction(filename string, u *Unigram, window int, replaceDigits bool, logger *Logger) *Cooc {
+func CoocExtraction(filename string, u *Unigram, window *Window, replaceDigits bool, logger *Logger) *Cooc {
 	documents := ReadParseGz(filename, replaceDigits, logger)
 
 	logger.Log("Encoding documents...")

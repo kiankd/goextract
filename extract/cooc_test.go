@@ -10,7 +10,8 @@ func TestExtractCooc(t *testing.T) {
 	u := ExtractUnigram(documents)
 	encodedDocs := UnigramEncode(u, documents)
 
-	c := ExtractCooc(encodedDocs[0], 20)
+	win := MakeWindow(20, "")
+	c := ExtractCooc(encodedDocs[0], win)
 	fmt.Printf("Length of Cooc: %d\n", len(c.Counter))
 	fmt.Printf("Number of documents: %d\n", len(documents))
 
@@ -27,27 +28,6 @@ func TestExtractCooc(t *testing.T) {
 	}
 }
 
-func TestWeighting(t *testing.T) {
-	window := 5
-	values := []float64{0.2, 0.4, 0.6, 0.8, 1, 1, 0.8, 0.6, 0.4, 0.2}
-	for i := window + 1; i < 1000-(window+1); i++ {
-		start, end := getContexts(i, window, 1000)
-		if end-start != len(values) {
-			t.Errorf("Error with context extraction, got %d to %d.\n", start, end)
-		}
-		crt := 0
-		for c := start; c < end; c++ {
-			if i != c {
-				w := Weighting(i, c, float64(window))
-				if w != values[crt] {
-					t.Errorf("Weight %f != %f!\n", w, values[crt])
-				}
-				crt++
-			}
-		}
-	}
-}
-
 func TestCoocMerge(t *testing.T) {
 	words := LoadSampleWords()
 	u := ExtractUnigram(words)
@@ -56,9 +36,13 @@ func TestCoocMerge(t *testing.T) {
 	// as it should be used on a doc-by-doc basis.
 	encodedDocs := UnigramEncode(u, words)
 
+	// Make window daddy
+	win2 := MakeWindow(2, "")
+	win5 := MakeWindow(2, "")
+
 	// The cooc that merges with the other "eats" it.
-	eater1 := ExtractCooc(encodedDocs[0], 2)
-	c2 := ExtractCooc(encodedDocs[1], 5)
+	eater1 := ExtractCooc(encodedDocs[0], win2)
+	c2 := ExtractCooc(encodedDocs[1], win5)
 	c1copy := eater1.deepCopy()
 	eater2 := c2.deepCopy()
 

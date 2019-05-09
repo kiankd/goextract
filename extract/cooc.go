@@ -4,6 +4,8 @@ import (
 	"math"
 )
 
+/* CoocData struct for assist in storage. */
+
 // CoocData - for storage later
 type CoocData struct {
 	Keys []int64
@@ -16,6 +18,8 @@ func (c *Cooc) LoadCoocData(d CoocData) {
 		c.Counter[d.Keys[i]] += d.Vals[i]
 	}
 }
+
+/* Cooc struct for the primary extraction. */
 
 // Cooc - Cooccurrence counter.
 type Cooc struct {
@@ -64,30 +68,18 @@ func InverseCantor(cantor int64) (k1, k2 int) {
 	return
 }
 
-func getContexts(i, w, length int) (int, int) {
-	return int(math.Max(float64(i-w), 0.0)),
-		int(math.Min(float64(i+w), float64(length)))
-}
-
-// Weighting - do dynamic context window weighting, like SGNS.
-// diff = abs(i-j) # 1, 2, 3, 4, 5...
-// window - diff + 1 / window
-// w = 5, diff=1: 5 - 1 + 1 / 5 = 1 good
-// w = 5, diff=3: 5 - 3 + 1 / 5 = 3/5 good
-// w = 5, diff=5: 5 - 5 + 1 / 5 = 1/5 good
-func Weighting(termIdx int, contIdx int, window float64) float64 {
-	return (window - math.Abs(float64(termIdx-contIdx)) + 1) / window
-}
-
 // ExtractCooc - extracts cooccurrence statistics from an encoded document.
-func ExtractCooc(encodedDoc []int, window int) *Cooc {
+func ExtractCooc(encodedDoc []int, win *Window) *Cooc {
+	L := len(encodedDoc)
 	cooc := ConstructCooc()
 	for i, term := range encodedDoc {
-		start, end := getContexts(i, window, len(encodedDoc))
-		for j := start; j < end; j++ {
-			if i != j {
+		win.Start(i, L)
+		for {
+			if j, weight, ok := win.Next(); ok {
 				cantor := CantorPairing(int64(term), int64(encodedDoc[j]))
-				cooc.Counter[cantor] += Weighting(i, j, float64(window))
+				cooc.Counter[cantor] += weight
+			} else {
+				break
 			}
 		}
 	}
