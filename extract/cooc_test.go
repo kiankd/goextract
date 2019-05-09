@@ -11,9 +11,9 @@ func TestExtractCooc(t *testing.T) {
 	encodedDocs := UnigramEncode(u, documents)
 
 	win := MakeWindow(20, "")
-	c := ExtractCooc(encodedDocs[0], win)
-	fmt.Printf("Length of Cooc: %d\n", len(c.Counter))
-	fmt.Printf("Number of documents: %d\n", len(documents))
+	c := ExtractCooc(encodedDocs[0], *win)
+	// fmt.Printf("Length of Cooc: %d\n", len(c.Counter))
+	// fmt.Printf("Number of documents: %d\n", len(documents))
 
 	// TODO: write actual tests for cooc extract
 	if false {
@@ -41,8 +41,8 @@ func TestCoocMerge(t *testing.T) {
 	win5 := MakeWindow(2, "")
 
 	// The cooc that merges with the other "eats" it.
-	eater1 := ExtractCooc(encodedDocs[0], win2)
-	c2 := ExtractCooc(encodedDocs[1], win5)
+	eater1 := ExtractCooc(encodedDocs[0], *win2)
+	c2 := ExtractCooc(encodedDocs[1], *win5)
 	c1copy := eater1.deepCopy()
 	eater2 := c2.deepCopy()
 

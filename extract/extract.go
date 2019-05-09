@@ -70,7 +70,7 @@ func CoocExtraction(filename string, u *Unigram, window *Window, replaceDigits b
 	// speaker
 	for i, doc := range encodedDocs {
 		go func(document []int) {
-			merger.input <- ExtractCooc(document, window)
+			merger.input <- ExtractCooc(document, *window)
 		}(doc)
 		if (i+1)%BUFFERSIZE == 0 { // Give some slack to let things catch up.
 			for {

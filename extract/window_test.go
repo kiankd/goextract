@@ -181,17 +181,16 @@ func TestCustomWeighting(t *testing.T) {
 	win = MakeWindow(-1, "../data/sample_receptive.w")
 	wtargs = []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.5, 1, 0.5,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.5, 1, 0.5}
+	WindowValidate(wtargs, win, t)
 	field := []float64{0.5, 1, 0.5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.5, 1, 0.5}
-	fmt.Println(win.weights)
-	WindowValidate(wtargs, win, t)
 	for i := 0; i < 1000; i++ {
 		win.Start(i, 1000)
 		WeightingIntegrationTest(win, 6, t)
 		win.Start(i, 1000)
 		if i >= 100 && i <= 900 {
 			widx := 0
-			for c := i - (len(wtargs) / 2); c <= i+(len(wtargs)/2); c++ {
+			for c := i - (len(field) / 2); c <= i+(len(field)/2); c++ {
 				targW := field[widx]
 				if c != i {
 					widx++

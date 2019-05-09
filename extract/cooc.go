@@ -69,7 +69,7 @@ func InverseCantor(cantor int64) (k1, k2 int) {
 }
 
 // ExtractCooc - extracts cooccurrence statistics from an encoded document.
-func ExtractCooc(encodedDoc []int, win *Window) *Cooc {
+func ExtractCooc(encodedDoc []int, win Window) *Cooc {
 	L := len(encodedDoc)
 	cooc := ConstructCooc()
 	for i, term := range encodedDoc {

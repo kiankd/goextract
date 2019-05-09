@@ -34,16 +34,8 @@ func (w *Window) Next() (int, float64, bool) {
 	if !w.ok {
 		return -1, -1, false
 	}
-
 	w.nextIdx++
 	w.nextWIdx++
-
-	// check weights or if we are at end of doc
-	if w.nextWIdx >= len(w.weights) || w.nextIdx >= w.max {
-		w.ok = false
-		return -1, -1, false
-	}
-
 	// need to do checks to see if we need to augment the counter.
 	if w.nextIdx < 0 { // check for beginning of doc
 		w.nextIdx = 0
@@ -51,6 +43,11 @@ func (w *Window) Next() (int, float64, bool) {
 	diff := int(math.Abs(float64(w.crtIdx - w.nextIdx)))
 	if diff < w.lnearest {
 		w.nextIdx = w.crtIdx + w.rnearest
+	}
+	// check if at end of weights or if we are at end of doc
+	if w.nextWIdx >= len(w.weights) || w.nextIdx >= w.max {
+		w.ok = false
+		return -1, -1, false
 	}
 	return w.nextIdx, w.weights[w.nextWIdx], true
 }
