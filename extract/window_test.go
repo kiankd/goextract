@@ -110,7 +110,7 @@ func WindowValidate(targs []float64, win *Window, t *testing.T) {
 
 func TestCustomWeighting(t *testing.T) {
 	w10 := MakeWindow(10, "")
-	w10c := MakeWindow(-1, "../data/sample_w10.w")
+	w10c := MakeWindow(-1, "../data/test_data/sample_w10.w")
 	WindowsEqualTest(w10, w10c, t)
 
 	// wfiles := []string{,
@@ -118,7 +118,7 @@ func TestCustomWeighting(t *testing.T) {
 	// 	"../data/sample_crazy.w",
 	// 	"../data/sample_receptive.w"}
 
-	win := MakeWindow(-1, "../data/sample_asymmetricR.w")
+	win := MakeWindow(-1, "../data/test_data/sample_asymmetricR.w")
 	wtargs := []float64{1, 0.8, 0.6, 0.4, 0.2}
 	WindowValidate(wtargs, win, t)
 	for i := 0; i < 1000; i++ {
@@ -148,7 +148,7 @@ func TestCustomWeighting(t *testing.T) {
 		}
 	}
 
-	win = MakeWindow(-1, "../data/sample_asymmetricL.w")
+	win = MakeWindow(-1, "../data/test_data/sample_asymmetricL.w")
 	wtargs = []float64{0.2, 0.4, 0.6, 0.8, 1}
 	WindowValidate(wtargs, win, t)
 	for i := 0; i < 1000; i++ {
@@ -178,7 +178,7 @@ func TestCustomWeighting(t *testing.T) {
 		}
 	}
 
-	win = MakeWindow(-1, "../data/sample_receptive.w")
+	win = MakeWindow(-1, "../data/test_data/sample_receptive.w")
 	wtargs = []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.5, 1, 0.5,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.5, 1, 0.5}
 	WindowValidate(wtargs, win, t)

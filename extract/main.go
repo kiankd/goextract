@@ -42,7 +42,7 @@ func checkArgs(opt, exP, uP, cP *string, v, w *int, winF *string) {
 	emptyUni := *uP == ""
 	emptyCoo := *cP == ""
 	emptyVoc := *v <= 0
-	emptyWin := *w <= 0 || *winF == ""
+	emptyWin := *w <= 0 && *winF == ""
 	switch *opt {
 	case "unigram-merge":
 		if emptyUni || emptyVoc {
@@ -51,7 +51,7 @@ func checkArgs(opt, exP, uP, cP *string, v, w *int, winF *string) {
 	case "cooc-merge":
 		if emptyCoo {
 			panic("No path specified for cooc-merging!")
-		} else if !strings.HasPrefix(*cP, "/") {
+		} else if !strings.HasSuffix(*cP, "/") {
 			panic("Trying to merge coocs, but need a directory!")
 		}
 
@@ -60,8 +60,8 @@ func checkArgs(opt, exP, uP, cP *string, v, w *int, winF *string) {
 			panic("No paths specified for unigram extraction!")
 		}
 	case "cooc":
-		if emptyExp || emptyCoo || emptyVoc || emptyWin {
-			panic("Cooc extraction needs exp, coocpath, vocabsize, and window! Missing!")
+		if emptyExp || emptyCoo || emptyWin || emptyUni {
+			panic("Cooc extraction needs exp, coocpath, unigram, and window! Missing!")
 		}
 	default:
 		panic(fmt.Sprintf("Option %s is invalid!\n", *opt))
