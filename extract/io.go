@@ -12,18 +12,6 @@ import (
 	"strings"
 )
 
-// GOBLEN - max num of items for a .gob file. 70 million.
-const GOBLEN int = 7 * 1e7
-
-// STRBUF - max num of strs for a .txt file write buffer, 1 million.
-const STRBUF int = 1e6
-
-// MINCOUNT - minimum value for the Nij statistics.
-const MINCOUNT float64 = 100
-
-// VERYMINCOUNT - the very min value for Nij statistics during preliminary extraction.
-const VERYMINCOUNT float64 = 5
-
 /* Basic IO helpers. */
 
 // ReadGzFile - reads a gzip file.

@@ -10,6 +10,16 @@ import (
 	"github.com/pkg/profile"
 )
 
+/* Globals ("ewwwww!" - I know, and I'm sorry...) */
+const (
+	GOBLEN       = int(7 * 1e7) // max num of items for a .gob file. 70 million.
+	STRBUF       = int(1e6)     // max num of strs for a .txt file write buffer, 1 million.
+	MINCOUNT     = float64(100) // minimum value for the Nij statistics after merging coocs.
+	VERYMINCOUNT = float64(5)   // min value for Nij statistics during preliminary extraction.
+	OOV          = "<OOV>"      // default string for out-of-vocabulary.
+	BUFFERSIZE   = 2500         // max number of threads used for the merging channels
+)
+
 func loadExperimentPath(extractPath string) string {
 	var paths []string
 	if strings.HasSuffix(extractPath, ".paths") {
@@ -54,7 +64,6 @@ func checkArgs(opt, exP, uP, cP *string, v, w *int, winF *string) {
 		} else if !strings.HasSuffix(*cP, "/") {
 			panic("Trying to merge coocs, but need a directory!")
 		}
-
 	case "unigram":
 		if emptyExp || emptyUni {
 			panic("No paths specified for unigram extraction!")
