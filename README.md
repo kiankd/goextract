@@ -1,6 +1,15 @@
 # goextract
 ## Go code for cooccurrence extraction of corpus statistics.
 
+WHENEVER YOU USE THIS CODE, YOU MUST ALWAYS FIRST RUN THE FOLLOWING TWO COMMANDS:
+```bash
+git pull
+cd extract/
+go build .
+```
+i.e., check for updates, then rebuild the go binary executable accordingly.
+
+
 This software is used to extract the cooccurrence statistics within a corpus of text. You will need:
 - go (https://golang.org/doc/install), version 1.10 or higher
 - to have a basic understanding of bash scripting
@@ -23,7 +32,7 @@ for f in divided/*.gz; do
 	./extract -option unigram -e $f -U unigrams/$i.unigram; 
 done
 ```
-
+*Note*: this will produce N unigram files -- if you get fewer than N files then you have run this script incorrectly (e.g., you forgot the $i.unigram)
 - Step 3. This script will produce a bunch of sub-unigram files for each file in `divided/`. But, we would rather have a single merged unigram file; additionally we need to specify what the desired vocabulary size should be -- 50,000 is often a good number! This is easy:
 
 `./extract -option unigram-merge -U unigrams/ -v 50000`
@@ -34,7 +43,6 @@ done
 - Step 4b. We could use a *generalized context window file*; e.g., perhaps we want to define an assymetric context window with our own desired weights. This is done by passing `-window /path/to/window_file.w`; examples of how the .w file should be written are found in `data/test_data/`, which includes left and right assymetric examples.
 
 - Step 4.1. Do the extraction! Let's suppose you are using a basic 5-token left-right context window, and we are storing temporary `.cooc` files into a directory called `coocs/`:
-
 ```bash
 i=0; 
 for f in divided/*.gz; do
@@ -42,6 +50,7 @@ for f in divided/*.gz; do
     ./extract -option cooc -e $f -U unigrams/merged.unigram -C coocs/$i.cooc -w 5;   
 done
 ```
+*Note*: this will produce at least N cooc files as google binaries (gobs) -- if you get fewer than N files then you have run this script incorrectly (e.g., you forgot the $i.cooc)
 
 - Step 5. Merge the results from extraction!
 
