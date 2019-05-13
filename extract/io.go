@@ -161,7 +161,7 @@ func LoadSingleCooc(into *Cooc, fullPath string) {
 }
 
 // SaveCooc - saves it into easy-readable text format.
-func SaveCooc(c *Cooc, fullPath string) {
+func SaveCooc(c *Cooc, u *Unigram, fullPath string) {
 	fi, err := os.Create(fullPath)
 	if err != nil {
 		panic(err)
@@ -178,7 +178,13 @@ func SaveCooc(c *Cooc, fullPath string) {
 		}
 		if count >= MINCOUNT {
 			k1, k2 := InverseCantor(cantor)
-			str.WriteString(fmt.Sprintf("%d %d %f\n", k1, k2, count))
+			if u == nil {
+				str.WriteString(fmt.Sprintf("%d %d %f\n", k1, k2, count))
+			} else {
+				s1 := u.Decode(k1)
+				s2 := u.Decode(k2)
+				str.WriteString(fmt.Sprintf("%s %s %f\n", s1, s2, count))
+			}
 			b++
 		}
 		i++

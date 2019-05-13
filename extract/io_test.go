@@ -49,5 +49,5 @@ func TestMerge(t *testing.T) {
 	l.Log("Seriailizing...")
 	SerializeCooc(c, "/tmp/ex.cooc", l)
 	l.Log("Merging...")
-	mergeCoocs("/tmp/", l)
+	mergeCoocs("/tmp/", nil, l)
 }

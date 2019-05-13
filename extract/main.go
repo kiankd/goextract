@@ -99,7 +99,7 @@ func mergeUnigrams(unigramPath string, vocabSize int, l *Logger) {
 }
 
 // Merge those boys!
-func mergeCoocs(coocsDir string, l *Logger) {
+func mergeCoocs(coocsDir string, u *Unigram, l *Logger) {
 	into := ConstructCooc()
 	cFiles, _ := ioutil.ReadDir(coocsDir)
 	for _, file := range cFiles {
@@ -110,7 +110,7 @@ func mergeCoocs(coocsDir string, l *Logger) {
 		}
 	}
 	l.Log("\tsaving coocs...")
-	SaveCooc(into, coocsDir+"merged.cooc")
+	SaveCooc(into, u, coocsDir+"merged.cooc")
 }
 
 func main() {
@@ -152,6 +152,9 @@ func main() {
 	replaceDigits := flag.Bool("nodigits", false,
 		"replace all digits with 0s during extraction")
 
+	mergeAsStr := flag.Bool("strkeep", false,
+		"pass when using option \"cooc-merge\" to save as strings, not idxs")
+
 	flag.Parse()
 
 	// Check args.
@@ -178,7 +181,12 @@ func main() {
 		mergeUnigrams(uPth, *vocabSize, l)
 
 	case "cooc-merge":
-		mergeCoocs(*coocPath, l)
+		if *mergeAsStr {
+			u := LoadUnigram(uPth)
+			mergeCoocs(*coocPath, u, l)
+		} else {
+			mergeCoocs(*coocPath, nil, l)
+		}
 
 	case "unigram":
 		exPath := loadExperimentPath(extractPath)
