@@ -27,10 +27,10 @@ func TestParse(t *testing.T) {
 func TestCantorPairing(t *testing.T) {
 	// Passes for all natural numbers!
 	var (
-		start1 = 0
-		end1   = 1000
-		start2 = 0
-		end2   = 2000
+		start1 = 97500
+		end1   = 100000
+		start2 = 1000
+		end2   = 5000
 	)
 	uniques := make(map[int64]bool)
 	for k1 := start1; k1 < end1; k1++ {

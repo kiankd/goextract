@@ -10,11 +10,11 @@ import (
 type Unigram struct {
 	encoder map[string]int
 	decoder map[int]string
-	counter map[int]float64
+	counter map[int]float32
 	idx     []int
 }
 
-func (u *Unigram) addStr(str string, count float64) {
+func (u *Unigram) addStr(str string, count float32) {
 	if code, ok := u.encoder[str]; ok {
 		u.counter[code] += count
 	} else {
@@ -77,7 +77,7 @@ func ConstructUnigram() *Unigram {
 	u := Unigram{
 		encoder: make(map[string]int),
 		decoder: make(map[int]string),
-		counter: make(map[int]float64)}
+		counter: make(map[int]float32)}
 	u.encoder[OOV] = 0
 	u.decoder[0] = OOV
 	u.counter[0] = 0.0
@@ -89,7 +89,7 @@ func ConstructAllocatedUnigram(size int) *Unigram {
 	u := Unigram{
 		encoder: make(map[string]int, size),
 		decoder: make(map[int]string, size),
-		counter: make(map[int]float64, size),
+		counter: make(map[int]float32, size),
 		idx:     make([]int, size)}
 	u.encoder[OOV] = 0
 	u.decoder[0] = OOV
@@ -147,7 +147,7 @@ func FilterUnigram(u *Unigram, maxVocabSize int) (fu *Unigram) {
 	vocabSize := int(math.Min(float64(maxVocabSize), float64(u.Len())))
 	fu = ConstructAllocatedUnigram(vocabSize)
 	sort.Sort(u)
-	oovCount := 0.0
+	oovCount := float32(0)
 	for i, oldCode := range u.idx {
 		newCode := i + 1 // don't overwrite OOV, which should always have code 0
 		if newCode >= vocabSize || u.decoder[oldCode] == OOV {

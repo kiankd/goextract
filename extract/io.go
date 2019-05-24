@@ -55,7 +55,7 @@ func SerializeUnigram(u *Unigram, fullPath string) error {
 }
 
 // Helper function for LoadUnigram.
-func parseUnigramLine(trip string) (string, int, float64) {
+func parseUnigramLine(trip string) (string, int, float32) {
 	split := strings.Split(trip, " ")
 	if len(split) != 3 {
 		panic(fmt.Sprintf("Corrupted unigram encoding - %d spaces!\n", len(split)))
@@ -66,7 +66,7 @@ func parseUnigramLine(trip string) (string, int, float64) {
 	if err1 != nil && err2 != nil {
 		panic(fmt.Sprintf("Corrupted unigram encoding! Str is: %s", trip))
 	}
-	return word, code, count
+	return word, code, float32(count)
 }
 
 // LoadUnigram - reads a unigram from disk
@@ -98,9 +98,9 @@ func LoadUnigram(fullPath string) *Unigram {
 /* IO for Coocs. */
 
 // Filters out the counts that are too small before serializing.
-func divideAndFilterMapData(m map[int64]float64) ([]int64, []float64) {
+func divideAndFilterMapData(m map[int64]float32) ([]int64, []float32) {
 	keys := make([]int64, 0, len(m))
-	vals := make([]float64, 0, len(m))
+	vals := make([]float32, 0, len(m))
 	for key, count := range m {
 		if count > VERYMINCOUNT {
 			keys = append(keys, key)
@@ -191,20 +191,20 @@ func SaveCooc(c *Cooc, u *Unigram, fullPath string) {
 	}
 }
 
-func parseWeightsStr(wstr []string) []float64 {
-	weights := make([]float64, len(wstr))
+func parseWeightsStr(wstr []string) []float32 {
+	weights := make([]float32, len(wstr))
 	for i := 0; i < len(wstr); i++ {
 		w, err := strconv.ParseFloat(wstr[i], 64)
 		if err != nil {
 			panic(err)
 		}
-		weights[i] = w
+		weights[i] = float32(w)
 	}
 	return weights
 }
 
 // LoadCustomWeights - helps for loading custom weight files.
-func LoadCustomWeights(fullPath string) ([]float64, []float64) {
+func LoadCustomWeights(fullPath string) ([]float32, []float32) {
 	wFile, err := os.Open(fullPath)
 	if err != nil {
 		panic(err)

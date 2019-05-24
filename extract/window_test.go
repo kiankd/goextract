@@ -25,7 +25,7 @@ func WeightingIntegrationTest(win *Window, maxIter int, t *testing.T) {
 func TestBasicWeighting(t *testing.T) {
 	win := MakeWindow(5, "")
 	window := 5
-	values := []float64{0.2, 0.4, 0.6, 0.8, 1, 1, 0.8, 0.6, 0.4, 0.2}
+	values := []float32{0.2, 0.4, 0.6, 0.8, 1, 1, 0.8, 0.6, 0.4, 0.2}
 	WindowValidate(values, win, t)
 	for i := 0; i < 1000; i++ {
 		win.Start(i, 1000)
@@ -86,14 +86,14 @@ func WindowsEqualTest(w1, w2 *Window, t *testing.T) {
 	}
 }
 
-func WindowValidate(targs []float64, win *Window, t *testing.T) {
-	tmap := make(map[float64]int)
+func WindowValidate(targs []float32, win *Window, t *testing.T) {
+	tmap := make(map[float32]int)
 	for _, w := range targs {
 		if w > 0 {
 			tmap[w]++
 		}
 	}
-	wmap := make(map[float64]int)
+	wmap := make(map[float32]int)
 	for _, w := range win.weights {
 		if w == 0 {
 			t.Error("Error, window has an inappropriate 0 value")
@@ -119,7 +119,7 @@ func TestCustomWeighting(t *testing.T) {
 	// 	"../data/sample_receptive.w"}
 
 	win := MakeWindow(-1, "../data/test_data/sample_asymmetricR.w")
-	wtargs := []float64{1, 0.8, 0.6, 0.4, 0.2}
+	wtargs := []float32{1, 0.8, 0.6, 0.4, 0.2}
 	WindowValidate(wtargs, win, t)
 	for i := 0; i < 1000; i++ {
 		win.Start(i, 1000)
@@ -149,7 +149,7 @@ func TestCustomWeighting(t *testing.T) {
 	}
 
 	win = MakeWindow(-1, "../data/test_data/sample_asymmetricL.w")
-	wtargs = []float64{0.2, 0.4, 0.6, 0.8, 1}
+	wtargs = []float32{0.2, 0.4, 0.6, 0.8, 1}
 	WindowValidate(wtargs, win, t)
 	for i := 0; i < 1000; i++ {
 		win.Start(i, 1000)
@@ -179,10 +179,10 @@ func TestCustomWeighting(t *testing.T) {
 	}
 
 	win = MakeWindow(-1, "../data/test_data/sample_receptive.w")
-	wtargs = []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.5, 1, 0.5,
+	wtargs = []float32{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.5, 1, 0.5,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.5, 1, 0.5}
 	WindowValidate(wtargs, win, t)
-	field := []float64{0.5, 1, 0.5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	field := []float32{0.5, 1, 0.5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.5, 1, 0.5}
 	for i := 0; i < 1000; i++ {
 		win.Start(i, 1000)

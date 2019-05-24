@@ -8,7 +8,7 @@ import (
 
 // Window - allows for arbitrarily defined context windows.
 type Window struct {
-	weights   []float64
+	weights   []float32
 	lnearest  int
 	lfurthest int
 	rnearest  int
@@ -30,7 +30,7 @@ func (w *Window) Start(idx, docLen int) {
 }
 
 // Next - gives the next context idx and weight for iteration.
-func (w *Window) Next() (int, float64, bool) {
+func (w *Window) Next() (int, float32, bool) {
 	if !w.ok {
 		return -1, -1, false
 	}
@@ -52,7 +52,7 @@ func (w *Window) Next() (int, float64, bool) {
 	return w.nextIdx, w.weights[w.nextWIdx], true
 }
 
-func fillNearestFurthestWeights(into *Window, weights []float64, left bool) {
+func fillNearestFurthestWeights(into *Window, weights []float32, left bool) {
 	// This checks for if it is totally asymmetric.
 	if weights[0] == 0 && len(weights) == 1 {
 		return
@@ -88,15 +88,15 @@ func MakeWindow(w int, wPath string) *Window {
 		panic("Ahh! Multiple window options provided!")
 	}
 	if w != -1 {
-		weights := make([]float64, 2*w)
-		fw := float64(w)
+		weights := make([]float32, 2*w)
+		fw := float32(w)
 		// left side, tricky tricky!
 		for i := 0; i < w; i++ {
-			weights[i] = (fw - (fw - float64(i) - 1)) / fw
+			weights[i] = (fw - (fw - float32(i) - 1)) / fw
 		}
 		// right side
 		for i := w; i < 2*w; i++ {
-			weights[i] = (fw + (fw - float64(i))) / fw
+			weights[i] = (fw + (fw - float32(i))) / fw
 		}
 		win := Window{weights: weights,
 			lnearest: 1, lfurthest: w,
@@ -105,7 +105,7 @@ func MakeWindow(w int, wPath string) *Window {
 	}
 	// Otherwise, we are doing a special custom window.
 	lWeights, rWeights := LoadCustomWeights(wPath)
-	weights := make([]float64, 0, len(lWeights)+len(rWeights))
+	weights := make([]float32, 0, len(lWeights)+len(rWeights))
 	win := Window{weights: weights,
 		lnearest: 1, lfurthest: 0,
 		rnearest: 1, rfurthest: 0}

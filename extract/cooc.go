@@ -9,7 +9,7 @@ import (
 // CoocData - for storage later
 type CoocData struct {
 	Keys []int64
-	Vals []float64
+	Vals []float32
 }
 
 // LoadCoocData - load serialized data into it
@@ -23,7 +23,7 @@ func (c *Cooc) LoadCoocData(d CoocData) {
 
 // Cooc - Cooccurrence counter.
 type Cooc struct {
-	Counter map[int64]float64
+	Counter map[int64]float32
 }
 
 func (c *Cooc) deepCopy() *Cooc {
@@ -44,7 +44,7 @@ func (c *Cooc) Merge(c2 *Cooc) {
 // ConstructCooc constructor
 func ConstructCooc() *Cooc {
 	cooc := Cooc{
-		Counter: make(map[int64]float64)}
+		Counter: make(map[int64]float32)}
 	return &cooc
 }
 
@@ -58,8 +58,7 @@ func CantorPairing(k1, k2 int64) int64 {
 // InverseCantor - gets back the original pair
 func InverseCantor(cantor int64) (k1, k2 int) {
 	z := float64(cantor)
-	w := math.Floor(
-		0.5 * (math.Sqrt(8*z+1) - 1))
+	w := math.Floor(0.5 * (math.Sqrt(8*z+1) - 1))
 	t := (w*w + w) / 2
 
 	// k2 is defined first

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"math"
 	"sort"
 	"testing"
 )
@@ -81,9 +80,11 @@ func validateSorting(u Unigram, t *testing.T) {
 func validateFiltering(u Unigram, fu Unigram, t *testing.T) {
 	sort.Sort(u)
 	sort.Sort(fu)
-	minCount := 1e99
+	minCount := float32(1e12)
 	for _, count := range fu.counter {
-		minCount = math.Min(count, minCount)
+		if count < minCount {
+			minCount = count
+		}
 	}
 	for _, code := range u.idx {
 		word := u.decoder[code]

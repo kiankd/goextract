@@ -14,8 +14,8 @@ import (
 const (
 	GOBLEN       = int(7 * 1e7) // max num of items for a .gob file. 70 million.
 	STRBUF       = int(1e6)     // max num of strs for a .txt file write buffer, 1 million.
-	MINCOUNT     = float64(100) // minimum value for the Nij statistics after merging coocs.
-	VERYMINCOUNT = float64(5)   // min value for Nij statistics during preliminary extraction.
+	MINCOUNT     = float32(100) // minimum value for the Nij statistics after merging coocs.
+	VERYMINCOUNT = float32(5)   // min value for Nij statistics during preliminary extraction.
 	OOV          = "<OOV>"      // default string for out-of-vocabulary.
 	BUFFERSIZE   = 2500         // max number of threads used for the merging channels
 )
