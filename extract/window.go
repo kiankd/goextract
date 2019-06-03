@@ -25,6 +25,10 @@ func (w *Window) Start(idx, docLen int) {
 	w.crtIdx = idx
 	w.nextIdx = w.crtIdx - w.lfurthest - 1
 	w.nextWIdx = -1
+	if w.nextIdx < 0 {
+		w.nextWIdx = (-1) * (w.nextIdx + 2)
+		w.nextIdx = -1
+	}
 	w.max = docLen
 	w.ok = true
 }
@@ -36,10 +40,7 @@ func (w *Window) Next() (int, float32, bool) {
 	}
 	w.nextIdx++
 	w.nextWIdx++
-	// need to do checks to see if we need to augment the counter.
-	if w.nextIdx < 0 { // check for beginning of doc
-		w.nextIdx = 0
-	}
+	// check if we need to augment counter and jump
 	diff := int(math.Abs(float64(w.crtIdx - w.nextIdx)))
 	if diff < w.lnearest {
 		w.nextIdx = w.crtIdx + w.rnearest

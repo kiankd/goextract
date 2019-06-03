@@ -59,6 +59,38 @@ func TestBasicWeighting(t *testing.T) {
 	}
 }
 
+func TestWindowEdge(t *testing.T) {
+	win := MakeWindow(3, "")
+
+	// Targets for the first 4 context windows
+	targets := []int{1, 2, 3,
+		0, 2, 3, 4,
+		0, 1, 3, 4, 5,
+		0, 1, 2, 4, 5, 6}
+	crt := 0
+
+	L := 10
+	for i := 0; i < L; i++ {
+		win.Start(i, L)
+		for {
+			if j, weight, ok := win.Next(); ok {
+				if false { // pro debug design pattern
+					fmt.Printf("%d %d: %f\n", i, j, weight)
+				}
+				if crt >= len(targets) {
+					continue
+				} else if j == targets[crt] {
+					crt++
+				} else {
+					t.Errorf("Did not get target, expected %d, got %d!\n", targets[crt], j)
+				}
+			} else {
+				break
+			}
+		}
+	}
+}
+
 func WindowsEqualTest(w1, w2 *Window, t *testing.T) {
 	if w1.lnearest != w2.lnearest {
 		t.Error("Left nearests not equal!")

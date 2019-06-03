@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"math"
 	"testing"
 )
 
@@ -10,21 +10,21 @@ func TestExtractCooc(t *testing.T) {
 	u := ExtractUnigram(documents)
 	encodedDocs := UnigramEncode(u, documents)
 
-	win := MakeWindow(20, "")
+	win := MakeWindow(5, "")
 	c := ExtractCooc(encodedDocs[0], *win)
-	// fmt.Printf("Length of Cooc: %d\n", len(c.Counter))
-	// fmt.Printf("Number of documents: %d\n", len(documents))
-
-	// TODO: write actual tests for cooc extract
-	if false {
-		i := 0
-		for code, count := range c.Counter {
-			fmt.Printf("\t%d: %f\n", code, count)
-			i++
-			if i > 50 {
-				break
-			}
+	good := 0
+	for cantor := range c.Counter {
+		i, j := InverseCantor(cantor)
+		lrC := float64(c.Counter[cantor])
+		rlC := float64(c.Counter[CantorPairing(int64(j), int64(i))])
+		if math.Abs(lrC-rlC) > 1e-5 { // float comparison
+			t.Errorf("Not symmetric (%d, %d)! Got lr %f but rl %f\n", i, j, lrC, rlC)
+		} else {
+			good++
 		}
+	}
+	if good != len(c.Counter) {
+		t.Errorf("Only got %f percent symmetric extractions!\n", 100*float64(good)/float64(len(c.Counter)))
 	}
 }
 
@@ -38,7 +38,7 @@ func TestCoocMerge(t *testing.T) {
 
 	// Make window daddy
 	win2 := MakeWindow(2, "")
-	win5 := MakeWindow(2, "")
+	win5 := MakeWindow(5, "")
 
 	// The cooc that merges with the other "eats" it.
 	eater1 := ExtractCooc(encodedDocs[0], *win2)
