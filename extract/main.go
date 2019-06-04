@@ -158,7 +158,7 @@ func main() {
 	minNij := flag.Float64("minnij", 100,
 		"value of the minimum Nij to be serialized")
 
-	vminNij := flag.Float64("verynij", 5,
+	vminNij := flag.Float64("vminnij", 5,
 		"value of the minimum Nij to be serialized")
 
 	flag.Parse()
