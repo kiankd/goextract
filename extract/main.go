@@ -11,7 +11,7 @@ import (
 )
 
 /* Globals ("ewwwww!" - I know, and I'm sorry...) */
-const (
+var (
 	GOBLEN       = int(7 * 1e7) // max num of items for a .gob file. 70 million.
 	STRBUF       = int(1e6)     // max num of strs for a .txt file write buffer, 1 million.
 	MINCOUNT     = float32(100) // minimum value for the Nij statistics after merging coocs.
@@ -155,10 +155,20 @@ func main() {
 	mergeAsStr := flag.Bool("strkeep", false,
 		"pass when using option \"cooc-merge\" to save as strings, not idxs")
 
+	minNij := flag.Float64("minnij", 100,
+		"value of the minimum Nij to be serialized")
+
+	vminNij := flag.Float64("verynij", 5,
+		"value of the minimum Nij to be serialized")
+
 	flag.Parse()
 
 	// Check args.
 	checkArgs(extractOption, &extractPath, unigramPath, coocPath, vocabSize, window, windowF)
+
+	// Put the Nij args into the globals (will be changed in future)
+	MINCOUNT = float32(*minNij)
+	VERYMINCOUNT = float32(*vminNij)
 
 	// TODO: pass to the logger all args and log them.
 	l := ConstructLogger(*logOption)
