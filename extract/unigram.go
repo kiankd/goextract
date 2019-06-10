@@ -8,10 +8,11 @@ import (
 
 // Unigram - a dictionary struct that is sortable by counts.
 type Unigram struct {
-	encoder map[string]int
-	decoder map[int]string
-	counter map[int]float32
-	idx     []int
+	encoder  map[string]int
+	decoder  map[int]string
+	counter  map[int]float32
+	idx      []int
+	oovCount int
 }
 
 func (u *Unigram) addStr(str string, count float32) {
@@ -41,7 +42,7 @@ func (u *Unigram) Decode(code int) string {
 	if str, ok := u.decoder[code]; ok {
 		return str
 	}
-	return u.decoder[u.encoder[OOV]]
+	return OOV
 }
 
 // Encode - encodes a single string, returns "code" and a bool "is-OOV"
@@ -49,7 +50,7 @@ func (u *Unigram) Encode(str string) (int, bool) {
 	if code, ok := u.encoder[str]; ok {
 		return code, false
 	}
-	return u.encoder[OOV], true
+	return -1, true
 }
 
 // Merge - Unigram u eats another Unigram u2.
@@ -78,9 +79,6 @@ func ConstructUnigram() *Unigram {
 		encoder: make(map[string]int),
 		decoder: make(map[int]string),
 		counter: make(map[int]float32)}
-	u.encoder[OOV] = 0
-	u.decoder[0] = OOV
-	u.counter[0] = 0.0
 	return &u
 }
 
@@ -91,9 +89,6 @@ func ConstructAllocatedUnigram(size int) *Unigram {
 		decoder: make(map[int]string, size),
 		counter: make(map[int]float32, size),
 		idx:     make([]int, size)}
-	u.encoder[OOV] = 0
-	u.decoder[0] = OOV
-	u.counter[0] = 0.0
 	for i := range u.idx {
 		u.idx[i] = i
 	}
@@ -148,8 +143,7 @@ func FilterUnigram(u *Unigram, maxVocabSize int) (fu *Unigram) {
 	fu = ConstructAllocatedUnigram(vocabSize)
 	sort.Sort(u)
 	oovCount := float32(0)
-	for i, oldCode := range u.idx {
-		newCode := i + 1 // don't overwrite OOV, which should always have code 0
+	for newCode, oldCode := range u.idx {
 		if newCode >= vocabSize || u.decoder[oldCode] == OOV {
 			oovCount += u.counter[oldCode]
 			continue
@@ -159,7 +153,7 @@ func FilterUnigram(u *Unigram, maxVocabSize int) (fu *Unigram) {
 		fu.decoder[newCode] = word
 		fu.counter[newCode] = u.counter[oldCode]
 	}
-	fu.counter[fu.encoder[OOV]] = oovCount
+	fu.oovCount = int(oovCount)
 	return
 }
 

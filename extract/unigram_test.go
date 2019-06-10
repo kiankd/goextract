@@ -11,6 +11,7 @@ func validateUnigramLengths(u Unigram) bool {
 		len(u.encoder) == len(u.counter) &&
 		len(u.encoder) == len(u.idx) &&
 		len(u.encoder) == u.Len()
+
 }
 func validateEncoderDecoder(u Unigram) bool {
 	for word, code := range u.encoder {
