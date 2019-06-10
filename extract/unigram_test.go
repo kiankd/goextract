@@ -72,7 +72,7 @@ func validateSorting(u Unigram, t *testing.T) {
 	for _, nextCode := range u.idx {
 		if !(u.counter[prevCode] >= u.counter[nextCode]) {
 			t.Errorf(`Unigram should be sorted in decreasing order but it is not!
-			%f is < %f (but should be >=)!`, u.counter[prevCode], u.counter[nextCode])
+			%d is < %d (but should be >=)!`, u.counter[prevCode], u.counter[nextCode])
 			return
 		}
 		prevCode = nextCode
@@ -81,7 +81,7 @@ func validateSorting(u Unigram, t *testing.T) {
 func validateFiltering(u Unigram, fu Unigram, t *testing.T) {
 	sort.Sort(u)
 	sort.Sort(fu)
-	minCount := float32(1e12)
+	minCount := int(1e12)
 	for _, count := range fu.counter {
 		if count < minCount {
 			minCount = count

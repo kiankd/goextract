@@ -11,13 +11,11 @@ import (
 )
 
 /* Globals ("ewwwww!" - I know, and I'm sorry...) */
-var (
-	GOBLEN       = int(7 * 1e7) // max num of items for a .gob file. 70 million.
-	STRBUF       = int(1e6)     // max num of strs for a .txt file write buffer, 1 million.
-	MINCOUNT     = float32(100) // minimum value for the Nij statistics after merging coocs.
-	VERYMINCOUNT = float32(5)   // min value for Nij statistics during preliminary extraction.
-	OOV          = "<OOV>"      // default string for out-of-vocabulary.
-	BUFFERSIZE   = 2500         // max number of threads used for the merging channels
+const (
+	GOBLEN     = int(7 * 1e7) // max num of items for a .gob file. 70 million.
+	STRBUF     = int(1e6)     // max num of strs for a .txt file write buffer, 1 million.
+	OOV        = "<OOV>"      // default string for out-of-vocabulary.
+	BUFFERSIZE = 2500         // max number of threads used for the merging channels
 )
 
 func loadExperimentPath(extractPath string) string {
@@ -99,7 +97,7 @@ func mergeUnigrams(unigramPath string, vocabSize int, l *Logger) {
 }
 
 // Merge those boys!
-func mergeCoocs(coocsDir string, u *Unigram, l *Logger) {
+func mergeCoocs(u *Unigram, mincount float32, coocsDir string, l *Logger) {
 	into := ConstructCooc()
 	cFiles, _ := ioutil.ReadDir(coocsDir)
 	for _, file := range cFiles {
@@ -110,7 +108,7 @@ func mergeCoocs(coocsDir string, u *Unigram, l *Logger) {
 		}
 	}
 	l.Log("\tsaving coocs...")
-	SaveCooc(into, u, coocsDir+"merged.cooc")
+	SaveCooc(into, u, mincount, coocsDir+"merged.cooc")
 }
 
 func main() {
@@ -156,19 +154,15 @@ func main() {
 		"pass when using option \"cooc-merge\" to save as strings, not idxs")
 
 	minNij := flag.Float64("minnij", 100,
-		"value of the minimum Nij to be serialized")
+		"value of the minimum Nij to be serialized (used ONLY during cooc-merge!)")
 
 	vminNij := flag.Float64("vminnij", 5,
-		"value of the minimum Nij to be serialized")
+		"value of the minimum Nij to be serialized (used ONLY during cooc!")
 
 	flag.Parse()
 
 	// Check args.
 	checkArgs(extractOption, &extractPath, unigramPath, coocPath, vocabSize, window, windowF)
-
-	// Put the Nij args into the globals (will be changed in future)
-	MINCOUNT = float32(*minNij)
-	VERYMINCOUNT = float32(*vminNij)
 
 	// TODO: pass to the logger all args and log them.
 	l := ConstructLogger(*logOption)
@@ -189,15 +183,13 @@ func main() {
 	switch *extractOption {
 	case "unigram-merge":
 		mergeUnigrams(uPth, *vocabSize, l)
-
 	case "cooc-merge":
 		if *mergeAsStr {
 			u := LoadUnigram(uPth)
-			mergeCoocs(*coocPath, u, l)
+			mergeCoocs(u, float32(*minNij), *coocPath, l)
 		} else {
-			mergeCoocs(*coocPath, nil, l)
+			mergeCoocs(nil, float32(*minNij), *coocPath, l)
 		}
-
 	case "unigram":
 		exPath := loadExperimentPath(extractPath)
 		l.Log(fmt.Sprintf("Will extract from path %s...", exPath))
@@ -214,7 +206,7 @@ func main() {
 		window := MakeWindow(*window, *windowF)
 		c := CoocExtraction(exPath, unigram, window, *replaceDigits, l)
 		l.Log("Serializing coocs...")
-		SerializeCooc(c, *coocPath, l)
+		SerializeCooc(c, float32(*vminNij), *coocPath, l)
 	}
 	l.Log("Finished.")
 }

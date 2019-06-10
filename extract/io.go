@@ -41,10 +41,12 @@ func ReadGzFile(filename string) ([]byte, error) {
 func SerializeUnigram(u *Unigram, fullPath string) error {
 	if f, err := os.Create(fullPath); err == nil {
 		defer f.Close()
+		// oov is the header.
+		f.WriteString(fmt.Sprintf("%s %d\n", OOV, u.oovCount))
 		for _, code := range u.idx {
 			word := u.Decode(code)
 			count := u.counter[code]
-			s := fmt.Sprintf("%d %s %f\n", code, word, count)
+			s := fmt.Sprintf("%d %s %d\n", code, word, count)
 			f.WriteString(s)
 		}
 	} else {
@@ -54,19 +56,35 @@ func SerializeUnigram(u *Unigram, fullPath string) error {
 	return nil
 }
 
-// Helper function for LoadUnigram.
-func parseUnigramLine(trip string) (string, int, float32) {
+// Helper functions for LoadUnigram.
+func parseUnigramLine(trip string) (string, int, int) {
 	split := strings.Split(trip, " ")
 	if len(split) != 3 {
 		panic(fmt.Sprintf("Corrupted unigram encoding - %d spaces!\n", len(split)))
 	}
 	word := split[1]
 	code, err1 := strconv.Atoi(split[0])
-	count, err2 := strconv.ParseFloat(split[2], 64)
+	count, err2 := strconv.Atoi(split[2])
 	if err1 != nil && err2 != nil {
 		panic(fmt.Sprintf("Corrupted unigram encoding! Str is: %s", trip))
 	}
-	return word, code, float32(count)
+	return word, code, count
+}
+
+func parseOovCount(header string) int {
+	split := strings.Split(header, " ")
+	if len(split) != 2 {
+		panic(fmt.Sprintf("Corrupted unigram header - %d spaces!\n", len(split)))
+	}
+	word := split[0]
+	if word != OOV {
+		panic(fmt.Sprintf("Corrupted unigram header - should be OOV but got %s!\n", word))
+	}
+	count, err := strconv.Atoi(split[1])
+	if err != nil {
+		panic(fmt.Sprintf("Corrupted unigram header! Header is: %s", header))
+	}
+	return count
 }
 
 // LoadUnigram - reads a unigram from disk
@@ -79,8 +97,10 @@ func LoadUnigram(fullPath string) *Unigram {
 			triples := strings.Split(fullStr, "\n")
 
 			// minus 1 for trailing newline at end of a unigram doc
-			u := ConstructAllocatedUnigram(len(triples) - 1)
-			for _, trip := range triples {
+			// another minus for the OOV header.
+			u := ConstructAllocatedUnigram(len(triples) - 2)
+			u.oovCount = parseOovCount(triples[0])
+			for _, trip := range triples[1:] {
 				if len(trip) == 0 {
 					continue
 				}
@@ -98,11 +118,11 @@ func LoadUnigram(fullPath string) *Unigram {
 /* IO for Coocs. */
 
 // Filters out the counts that are too small before serializing.
-func divideAndFilterMapData(m map[int64]float32) ([]int64, []float32) {
+func divideAndFilterMapData(m map[int64]float32, mincount float32) ([]int64, []float32) {
 	keys := make([]int64, 0, len(m))
 	vals := make([]float32, 0, len(m))
 	for key, count := range m {
-		if count > VERYMINCOUNT {
+		if count > mincount {
 			keys = append(keys, key)
 			vals = append(vals, count)
 		}
@@ -111,8 +131,8 @@ func divideAndFilterMapData(m map[int64]float32) ([]int64, []float32) {
 }
 
 // SerializeCooc - Helper to write a Cooc to disk in binary (gob).
-func SerializeCooc(c *Cooc, fullPath string, l *Logger) {
-	keys, vals := divideAndFilterMapData(c.Counter)
+func SerializeCooc(c *Cooc, mincount float32, fullPath string, l *Logger) {
+	keys, vals := divideAndFilterMapData(c.Counter, mincount)
 	start := 0
 	end := GOBLEN
 	for fnum := 0; start < len(keys); fnum++ {
@@ -161,7 +181,7 @@ func LoadSingleCooc(into *Cooc, fullPath string) {
 }
 
 // SaveCooc - saves it into easy-readable text format.
-func SaveCooc(c *Cooc, u *Unigram, fullPath string) {
+func SaveCooc(c *Cooc, u *Unigram, mincount float32, fullPath string) {
 	fi, err := os.Create(fullPath)
 	if err != nil {
 		panic(err)
@@ -176,7 +196,7 @@ func SaveCooc(c *Cooc, u *Unigram, fullPath string) {
 			str.Reset()
 			b = 0
 		}
-		if count >= MINCOUNT {
+		if count >= mincount {
 			k1, k2 := InverseCantor(cantor)
 			if u == nil {
 				str.WriteString(fmt.Sprintf("%d %d %f\n", k1, k2, count))

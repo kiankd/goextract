@@ -28,7 +28,7 @@ func TestCoocIO(t *testing.T) {
 	c := CoocExtraction("../data/test_data/sample.txt.gz", u, win2, false, l)
 
 	l.Log("Seriailizing...")
-	SerializeCooc(c, "/tmp/ex.cooc", l)
+	SerializeCooc(c, float32(5.0), "/tmp/ex.cooc", l)
 	c2 := ConstructCooc()
 	l.Log("Loading...")
 	LoadCooc(c2, "/tmp/ex.cooc", l)
@@ -46,8 +46,8 @@ func TestMerge(t *testing.T) {
 	u := ExtractUnigram(documents)
 	win2 := MakeWindow(2, "")
 	c := CoocExtraction("../data/test_data/sample.txt.gz", u, win2, false, l)
-	l.Log("Seriailizing...")
-	SerializeCooc(c, "/tmp/ex.cooc", l)
+	l.Log("Serializing...")
+	SerializeCooc(c, float32(5.0), "/tmp/ex.cooc", l)
 	l.Log("Merging...")
-	mergeCoocs("/tmp/", nil, l)
+	mergeCoocs(nil, float32(5.0), "/tmp/", l)
 }

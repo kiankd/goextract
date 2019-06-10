@@ -10,12 +10,12 @@ import (
 type Unigram struct {
 	encoder  map[string]int
 	decoder  map[int]string
-	counter  map[int]float32
+	counter  map[int]int
 	idx      []int
 	oovCount int
 }
 
-func (u *Unigram) addStr(str string, count float32) {
+func (u *Unigram) addStr(str string, count int) {
 	if code, ok := u.encoder[str]; ok {
 		u.counter[code] += count
 	} else {
@@ -78,7 +78,7 @@ func ConstructUnigram() *Unigram {
 	u := Unigram{
 		encoder: make(map[string]int),
 		decoder: make(map[int]string),
-		counter: make(map[int]float32)}
+		counter: make(map[int]int)}
 	return &u
 }
 
@@ -87,7 +87,7 @@ func ConstructAllocatedUnigram(size int) *Unigram {
 	u := Unigram{
 		encoder: make(map[string]int, size),
 		decoder: make(map[int]string, size),
-		counter: make(map[int]float32, size),
+		counter: make(map[int]int, size),
 		idx:     make([]int, size)}
 	for i := range u.idx {
 		u.idx[i] = i
@@ -112,7 +112,7 @@ func DescribeUnigram(u *Unigram, verbosity int) string {
 	if verbosity >= 2 {
 		s += "Verbosity deep:\n"
 		for _, code := range u.idx[:(verbosity * 2)] {
-			s += fmt.Sprintf("\tCode %4d: %16s, count=%f\n", code, u.decoder[code], u.counter[code])
+			s += fmt.Sprintf("\tCode %4d: %16s, count=%d\n", code, u.decoder[code], u.counter[code])
 		}
 	}
 	return s
@@ -142,7 +142,7 @@ func FilterUnigram(u *Unigram, maxVocabSize int) (fu *Unigram) {
 	vocabSize := int(math.Min(float64(maxVocabSize), float64(u.Len())))
 	fu = ConstructAllocatedUnigram(vocabSize)
 	sort.Sort(u)
-	oovCount := float32(0)
+	oovCount := 0
 	for newCode, oldCode := range u.idx {
 		if newCode >= vocabSize || u.decoder[oldCode] == OOV {
 			oovCount += u.counter[oldCode]
@@ -153,7 +153,7 @@ func FilterUnigram(u *Unigram, maxVocabSize int) (fu *Unigram) {
 		fu.decoder[newCode] = word
 		fu.counter[newCode] = u.counter[oldCode]
 	}
-	fu.oovCount = int(oovCount)
+	fu.oovCount = oovCount
 	return
 }
 

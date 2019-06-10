@@ -41,6 +41,20 @@ func (c *Cooc) Merge(c2 *Cooc) {
 	}
 }
 
+// AddAll - Cooc adds list of all terms and contexts for a single weight value.
+func (c *Cooc) AddAll(tids []int, cids []int, weight float32) {
+	// No Min function between ints in Go :(
+	size := len(tids)
+	if len(cids) < size {
+		size = len(cids)
+	}
+	// Iterate over all of them and add up!
+	for i := 0; i < size; i++ {
+		cantor := CantorPairing(int64(tids[i]), int64(cids[i]))
+		c.Counter[cantor] += weight
+	}
+}
+
 // ConstructCooc constructor
 func ConstructCooc() *Cooc {
 	cooc := Cooc{
@@ -69,17 +83,25 @@ func InverseCantor(cantor int64) (k1, k2 int) {
 
 // ExtractCooc - extracts cooccurrence statistics from an encoded document.
 func ExtractCooc(encodedDoc []int, win Window) *Cooc {
-	L := len(encodedDoc)
 	cooc := ConstructCooc()
-	for i, term := range encodedDoc {
-		win.Start(i, L)
-		for {
-			if j, weight, ok := win.Next(); ok {
-				cantor := CantorPairing(int64(term), int64(encodedDoc[j]))
-				cooc.Counter[cantor] += weight
-			} else {
-				break
-			}
+	lstart, lend := win.GetLeftStartEnd()
+	for i := lstart; i < lend; i++ {
+		weight := win.lWeights[i]
+		if weight > 0 && i+1 < len(encodedDoc) {
+			offset := i + 1
+			terms := encodedDoc[offset:]
+			conts := encodedDoc[:len(encodedDoc)-offset]
+			cooc.AddAll(terms, conts, weight)
+		}
+	}
+	rstart, rend := win.GetRightStartEnd()
+	for i := rstart; i < rend; i++ {
+		weight := win.rWeights[i]
+		if weight > 0 && i+1 < len(encodedDoc) {
+			offset := i + 1
+			terms := encodedDoc[:len(encodedDoc)-offset]
+			conts := encodedDoc[offset:]
+			cooc.AddAll(terms, conts, weight)
 		}
 	}
 	return cooc

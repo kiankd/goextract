@@ -17,7 +17,7 @@ func TestExtractCooc(t *testing.T) {
 		i, j := InverseCantor(cantor)
 		lrC := float64(c.Counter[cantor])
 		rlC := float64(c.Counter[CantorPairing(int64(j), int64(i))])
-		if math.Abs(lrC-rlC) > 1e-5 { // float comparison
+		if math.Abs(lrC-rlC) > 1e-3 { // float comparison
 			t.Errorf("Not symmetric (%d, %d)! Got lr %f but rl %f\n", i, j, lrC, rlC)
 		} else {
 			good++
