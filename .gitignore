@@ -4,3 +4,5 @@
 *.cooc
 extract/extract
 *.paths
+*.gob*
+*.DS_Store
